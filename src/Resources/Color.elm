@@ -13,6 +13,11 @@ panelColor =
     rgb255 52 50 56
 
 
+lightPanelColor : Color
+lightPanelColor =
+    rgb255 62 60 66
+
+
 borderColor : Color
 borderColor =
     rgb255 72 70 76

@@ -1,7 +1,7 @@
 {
     "description": "Testing Elm Markup",
     "scripts": {
-        "debug": "elm-live src/Main.elm --open --hot --optimize --dir=public -- --output=public/elm.js"
+        "debug": "elm-live src/Main.elm --open --hot --dir=public -- --output=public/elm.js"
     },
     "author": "Rustam Azizov",
     "license": "MIT"

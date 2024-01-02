@@ -1,11 +1,25 @@
 module Article exposing (..)
 
-import Element exposing (Element, column, el, paragraph, spacing, text)
+import Element exposing (Element, el, paragraph, spacing, text)
 import Element.Font as Font
 import Html.Attributes exposing (style)
 import Mark exposing (Block, Document)
 import Mark.Error as Error exposing (Error)
-import Resources.Font exposing (headingFontSize)
+
+
+type alias Metadata =
+    { title : String }
+
+
+metadata : Block Metadata
+metadata =
+    Mark.record "Article"
+        (\title ->
+            { title = title
+            }
+        )
+        |> Mark.field "title" Mark.string
+        |> Mark.toBlock
 
 
 texts : Block (List (Element msg))
@@ -31,22 +45,20 @@ texts =
         )
 
 
-title : Block (Element msg)
-title =
-    Mark.block "Title"
-        (\children -> column [ Font.size headingFontSize, spacing 20 ] children)
-        texts
-
-
-document : Document (List (Element msg))
+document : Document { metadata : Metadata, body : List (Element msg) }
 document =
-    Mark.document
-        identity
-        (Mark.manyOf
-            [ title
-            , Mark.map (paragraph [ spacing 10 ]) texts
-            ]
+    Mark.documentWith
+        (\meta body ->
+            { metadata = meta
+            , body = body
+            }
         )
+        { metadata = metadata
+        , body =
+            Mark.manyOf
+                [ Mark.map (paragraph [ spacing 10 ]) texts
+                ]
+        }
 
 
 viewErrors : List Error -> List (Element msg)

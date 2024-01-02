@@ -4,7 +4,7 @@ import Animator exposing (Animator, Timeline)
 import Article exposing (document, viewErrors)
 import Browser exposing (Document)
 import Browser.Events
-import Element exposing (Element, clip, clipY, column, fill, fillPortion, focusStyle, height, layoutWith, noHover, paddingXY, px, row, scrollbarY, spacing, text, textColumn, width)
+import Element exposing (Element, clipY, column, el, fill, fillPortion, focusStyle, height, layoutWith, mouseDown, mouseOver, noHover, none, padding, paddingEach, paddingXY, pointer, px, row, scrollbarY, shrink, spacing, text, textColumn, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -14,8 +14,8 @@ import Mark
 import Platform.Cmd as Cmd
 import Remote
 import RemoteData exposing (RemoteData(..), WebData)
-import Resources.Color exposing (backgroundColor, borderColor, panelColor, textColor)
-import Resources.Font exposing (baseFont, bodyFontSize)
+import Resources.Color exposing (backgroundColor, borderColor, lightPanelColor, panelColor, textColor)
+import Resources.Font exposing (baseFont, bodyFontSize, headingFontSize, smallFontSize)
 import Time
 
 
@@ -31,8 +31,8 @@ type alias Model =
 
 
 type Msg
-    = GotArticle (WebData String)
-    | AnimationTick Time.Posix
+    = ArticleReceived (WebData String)
+    | FrameReceived Time.Posix
     | WindowResized Int Int
 
 
@@ -54,7 +54,7 @@ init windowSize =
     ( { source = Loading, timeline = Animator.init (), windowSize = windowSize }
     , Http.get
         { url = "articles/example.emu"
-        , expect = Http.expectString (RemoteData.fromResult >> GotArticle)
+        , expect = Http.expectString (RemoteData.fromResult >> ArticleReceived)
         }
     )
 
@@ -62,14 +62,14 @@ init windowSize =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GotArticle result ->
+        ArticleReceived result ->
             ( { model
                 | source = result
               }
             , Cmd.none
             )
 
-        AnimationTick time ->
+        FrameReceived time ->
             ( Animator.update time animator model
             , Cmd.none
             )
@@ -82,16 +82,31 @@ update msg model =
             )
 
 
+articles : List String
+articles =
+    [ "Example"
+    , "Another example"
+    , "Yet another example"
+    ]
+
+
 layout : Model -> Element msg
 layout model =
     let
         articleView source =
             case Mark.compile document source of
                 Mark.Success article ->
-                    article
+                    el
+                        [ Font.size headingFontSize
+                        , paddingEach { zeroSides | bottom = 30 }
+                        , Font.semiBold
+                        ]
+                        (text article.metadata.title)
+                        :: article.body
+                        ++ [ el [ height (px 60) ] none ]
 
                 Mark.Almost { result, errors } ->
-                    result ++ viewErrors errors
+                    result.body ++ viewErrors errors
 
                 Mark.Failure errors ->
                     viewErrors errors
@@ -123,21 +138,45 @@ layout model =
                 , Background.color panelColor
                 , Border.color borderColor
                 , Border.widthEach { zeroSides | right = 1 }
+                , paddingXY 10 10
+                , spacing 10
                 ]
-                [ text "Hi!" ]
+                (List.map
+                    (text
+                        >> el
+                            [ Font.size smallFontSize
+                            , width fill
+                            , height shrink
+                            , mouseOver [ Background.color lightPanelColor ]
+                            , Border.color borderColor
+                            , Border.width 1
+                            , paddingXY 20 10
+                            , Border.rounded 5
+                            , pointer
+                            ]
+                    )
+                    articles
+                )
             , -- Article
-              textColumn
+              row
                 [ width (fillPortion 4)
                 , height fill
-                , paddingXY 200 30
-                , spacing 20
                 , scrollbarY
+                , paddingXY 0 40
                 ]
-                (Remote.view
-                    (Loader.view { defaultConfig | color = backgroundColor } model.timeline)
-                    articleView
-                    model.source
-                )
+                [ column [ width fill ] []
+                , textColumn
+                    [ width (fillPortion 2)
+                    , height fill
+                    , spacing 20
+                    ]
+                    (Remote.view
+                        (Loader.view { defaultConfig | color = backgroundColor } model.timeline)
+                        articleView
+                        model.source
+                    )
+                , column [ width fill ] []
+                ]
             ]
         ]
 
@@ -165,7 +204,7 @@ view model =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ Animator.toSubscription AnimationTick model animator
+        [ Animator.toSubscription FrameReceived model animator
         , Browser.Events.onResize WindowResized
         ]
 
