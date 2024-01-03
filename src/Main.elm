@@ -16,6 +16,7 @@ import Remote
 import RemoteData exposing (RemoteData(..), WebData)
 import Resources.Color exposing (backgroundColor, borderColor, lightPanelColor, panelColor, textColor)
 import Resources.Font exposing (baseFont, bodyFontSize, headingFontSize, smallFontSize)
+import Resources.Scrollbar as Scrollbar
 import Time
 
 
@@ -158,24 +159,26 @@ layout model =
                     articles
                 )
             , -- Article
-              row
-                [ width (fillPortion 4)
-                , height fill
-                , scrollbarY
-                , paddingXY 0 40
-                ]
-                [ column [ width fill ] []
-                , textColumn
-                    [ width (fillPortion 2)
+              row [ width (fillPortion 4), height fill, paddingXY 4 10 ]
+                [ row
+                    [ width fill
                     , height fill
-                    , spacing 20
+                    , paddingXY 0 30
+                    , scrollbarY
                     ]
-                    (Remote.view
-                        (Loader.view { defaultConfig | color = backgroundColor } model.timeline)
-                        articleView
-                        model.source
-                    )
-                , column [ width fill ] []
+                    [ column [ width fill ] []
+                    , textColumn
+                        [ width (fillPortion 2)
+                        , height fill
+                        , spacing 20
+                        ]
+                        (Remote.view
+                            (Loader.view { defaultConfig | color = backgroundColor } model.timeline)
+                            articleView
+                            model.source
+                        )
+                    , column [ width fill ] []
+                    ]
                 ]
             ]
         ]
@@ -195,7 +198,11 @@ view model =
                     }
                 ]
             }
-            [ Font.size bodyFontSize, Font.family baseFont, Font.color textColor ]
+            [ Font.size bodyFontSize
+            , Font.family baseFont
+            , Font.color textColor
+            , Scrollbar.color borderColor
+            ]
             (layout model)
         ]
     }
