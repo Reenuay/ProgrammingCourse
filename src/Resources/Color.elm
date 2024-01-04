@@ -1,4 +1,4 @@
-module Resources.Color exposing (..)
+module Resources.Color exposing (backgroundColor, borderColor, lightPanelColor, panelColor, textColor)
 
 import Element exposing (Color, rgb255)
 
