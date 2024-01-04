@@ -4,28 +4,36 @@ import Animator exposing (Animator, Timeline)
 import Article exposing (document, viewErrors)
 import Browser exposing (Document)
 import Browser.Events
-import Element exposing (Element, clipY, column, el, fill, fillPortion, focusStyle, height, layoutWith, mouseDown, mouseOver, noHover, none, padding, paddingEach, paddingXY, pointer, px, row, scrollbarY, shrink, spacing, text, textColumn, width)
+import Element exposing (Element, centerX, centerY, clipY, column, el, fill, fillPortion, focusStyle, height, layoutWith, mouseOver, none, paddingEach, paddingXY, pointer, px, row, scrollbarY, shrink, spacing, text, textColumn, width)
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events exposing (onClick)
 import Element.Font as Font
 import Http
 import Loader exposing (defaultConfig)
 import Mark
 import Platform.Cmd as Cmd
-import Remote
-import RemoteData exposing (RemoteData(..), WebData)
+import RemoteData exposing (WebData)
 import Resources.Color exposing (backgroundColor, borderColor, lightPanelColor, panelColor, textColor)
-import Resources.Font exposing (baseFont, bodyFontSize, headingFontSize, smallFontSize)
+import Resources.Font exposing (baseFont, bodyFontSize, headingFontSize, smallFontSize, subheadingFontSize)
 import Resources.Scrollbar as Scrollbar
 import Time
 
 
 type alias WindowSize =
-    { width : Int, height : Int }
+    { width : Int
+    , height : Int
+    }
+
+
+type alias Article =
+    { title : String
+    }
 
 
 type alias Model =
-    { source : WebData String
+    { articles : List Article
+    , source : WebData String
     , timeline : Timeline ()
     , windowSize : WindowSize
     }
@@ -35,6 +43,7 @@ type Msg
     = ArticleReceived (WebData String)
     | FrameReceived Time.Posix
     | WindowResized Int Int
+    | LoadArticle String
 
 
 zeroSides : { top : number, bottom : number, left : number, right : number }
@@ -50,13 +59,22 @@ animator =
             (\newTimeline model -> { model | timeline = newTimeline })
 
 
+articles : List String
+articles =
+    [ "Example"
+    , "Another example"
+    , "Yet another example"
+    ]
+
+
 init : WindowSize -> ( Model, Cmd Msg )
 init windowSize =
-    ( { source = Loading, timeline = Animator.init (), windowSize = windowSize }
-    , Http.get
-        { url = "articles/example.emu"
-        , expect = Http.expectString (RemoteData.fromResult >> ArticleReceived)
-        }
+    ( { articles = List.map (\title -> { title = title }) articles
+      , source = RemoteData.NotAsked
+      , timeline = Animator.init ()
+      , windowSize = windowSize
+      }
+    , Cmd.none
     )
 
 
@@ -82,36 +100,17 @@ update msg model =
             , Cmd.none
             )
 
+        LoadArticle title ->
+            ( { model | source = RemoteData.Loading }
+            , Http.get
+                { url = "articles/" ++ title ++ ".emu"
+                , expect = Http.expectString (RemoteData.fromResult >> ArticleReceived)
+                }
+            )
 
-articles : List String
-articles =
-    [ "Example"
-    , "Another example"
-    , "Yet another example"
-    ]
 
-
-layout : Model -> Element msg
+layout : Model -> Element Msg
 layout model =
-    let
-        articleView source =
-            case Mark.compile document source of
-                Mark.Success article ->
-                    el
-                        [ Font.size headingFontSize
-                        , paddingEach { zeroSides | bottom = 30 }
-                        , Font.semiBold
-                        ]
-                        (text article.metadata.title)
-                        :: article.body
-                        ++ [ el [ height (px 60) ] none ]
-
-                Mark.Almost { result, errors } ->
-                    result.body ++ viewErrors errors
-
-                Mark.Failure errors ->
-                    viewErrors errors
-    in
     -- Root
     column
         [ width fill
@@ -131,7 +130,10 @@ layout model =
             []
         , --Body
           row
-            [ width fill, height fill, clipY ]
+            [ width fill
+            , height fill
+            , clipY
+            ]
             [ -- Left panel
               column
                 [ width fill
@@ -143,55 +145,94 @@ layout model =
                 , spacing 10
                 ]
                 (List.map
-                    (text
-                        >> el
+                    (\article ->
+                        el
                             [ Font.size smallFontSize
                             , width fill
                             , height shrink
-                            , mouseOver [ Background.color lightPanelColor ]
                             , Border.color borderColor
                             , Border.width 1
                             , paddingXY 20 10
                             , Border.rounded 5
                             , pointer
+                            , mouseOver [ Background.color lightPanelColor ]
+                            , onClick (LoadArticle article.title)
                             ]
+                            (text article.title)
                     )
-                    articles
+                    model.articles
                 )
             , -- Article
-              row [ width (fillPortion 4), height fill, paddingXY 4 10 ]
+              row
+                [ width (fillPortion 4)
+                , height fill
+                , paddingXY 4 10
+                ]
                 [ row
                     [ width fill
                     , height fill
                     , paddingXY 0 30
                     , scrollbarY
                     ]
-                    [ column [ width fill ] []
-                    , textColumn
+                    [ el [ width fill ] none
+                    , el
                         [ width (fillPortion 2)
                         , height fill
                         , spacing 20
                         ]
-                        (Remote.view
-                            (Loader.view { defaultConfig | color = backgroundColor } model.timeline)
-                            articleView
-                            model.source
+                        (case model.source of
+                            RemoteData.NotAsked ->
+                                el [ Font.size subheadingFontSize, centerX, centerY ] (text "No article is open")
+
+                            RemoteData.Loading ->
+                                el [ centerX, centerY ]
+                                    (Loader.view
+                                        { defaultConfig
+                                            | color = panelColor
+                                        }
+                                        model.timeline
+                                    )
+
+                            RemoteData.Failure _ ->
+                                el [ centerX, centerY ] (text "Error!")
+
+                            RemoteData.Success source ->
+                                textColumn
+                                    [ width fill
+                                    , height fill
+                                    ]
+                                <|
+                                    case Mark.compile document source of
+                                        Mark.Success article ->
+                                            el
+                                                [ Font.size headingFontSize
+                                                , paddingEach { zeroSides | bottom = 30 }
+                                                , Font.semiBold
+                                                ]
+                                                (text article.metadata.title)
+                                                :: article.body
+                                                ++ [ el [ height (px 60) ] none ]
+
+                                        Mark.Almost { result, errors } ->
+                                            result.body ++ viewErrors errors
+
+                                        Mark.Failure errors ->
+                                            viewErrors errors
                         )
-                    , column [ width fill ] []
+                    , el [ width fill ] none
                     ]
                 ]
             ]
         ]
 
 
-view : Model -> Document msg
+view : Model -> Document Msg
 view model =
     { title = "Test Elm Markup"
     , body =
         [ layoutWith
             { options =
-                [ noHover
-                , focusStyle
+                [ focusStyle
                     { borderColor = Nothing
                     , backgroundColor = Nothing
                     , shadow = Nothing
