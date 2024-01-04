@@ -12,7 +12,7 @@ color c =
 
         toByte : Float -> Int
         toByte channel =
-            channel * 256 |> round
+            channel * 255 |> round
 
         rgbaColor =
             "rgba("
