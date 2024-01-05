@@ -19,8 +19,8 @@ defaultConfig =
     }
 
 
-view : Config -> Timeline a -> Element msg
-view config timeline =
+bars : Config -> Timeline a -> Element msg
+bars config timeline =
     let
         paddingValue =
             5

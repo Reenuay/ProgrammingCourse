@@ -211,7 +211,7 @@ remoteDataView =
 
                 RemoteData.Loading ->
                     el [ centerX, centerY ]
-                        (Loader.view
+                        (Loader.bars
                             { defaultConfig
                                 | color = panelColor
                             }
