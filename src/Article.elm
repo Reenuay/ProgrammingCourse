@@ -1,4 +1,4 @@
-module Article exposing (document, viewErrors)
+module Article exposing (CompiledArticle, document, viewErrors)
 
 import Element exposing (Element, el, paragraph, spacing, text)
 import Element.Font as Font
@@ -9,6 +9,10 @@ import Mark.Error as Error exposing (Error)
 
 type alias Metadata =
     { title : String }
+
+
+type alias CompiledArticle msg =
+    { metadata : Metadata, body : List (Element msg) }
 
 
 metadata : Block Metadata
@@ -45,7 +49,7 @@ texts =
         )
 
 
-document : Document { metadata : Metadata, body : List (Element msg) }
+document : Document (CompiledArticle msg)
 document =
     Mark.documentWith
         (\meta body ->

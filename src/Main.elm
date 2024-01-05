@@ -1,10 +1,10 @@
 module Main exposing (main)
 
 import Animator exposing (Animator, Timeline)
-import Article exposing (document, viewErrors)
+import Article exposing (CompiledArticle, document, viewErrors)
 import Browser exposing (Document)
 import Browser.Events
-import Element exposing (Color, Element, centerX, centerY, clipY, column, el, fill, fillPortion, focusStyle, height, layoutWith, mouseOver, none, paddingEach, paddingXY, pointer, px, row, scrollbarY, shrink, spacing, text, textColumn, width)
+import Element exposing (Element, centerX, centerY, clipY, column, el, fill, fillPortion, focusStyle, height, layoutWith, mouseOver, none, paddingEach, paddingXY, pointer, px, row, scrollbarY, shrink, spacing, text, textColumn, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events exposing (onClick)
@@ -12,7 +12,8 @@ import Element.Font as Font
 import Element.Lazy exposing (lazy, lazy2)
 import Http exposing (Error(..), get)
 import Loader exposing (defaultConfig)
-import Mark
+import Mark exposing (Outcome, Partial)
+import Mark.Error exposing (Error)
 import Platform.Cmd as Cmd
 import RemoteData exposing (WebData)
 import Resources.Font exposing (baseFont, bodyFontSize, giantFontSize, headingFontSize, smallFontSize, subheadingFontSize)
@@ -32,16 +33,20 @@ type alias Article =
     }
 
 
+type alias ArticleOutcome msg =
+    Outcome (List Error) (Partial (CompiledArticle msg)) (CompiledArticle msg)
+
+
 type alias Model =
     { articles : List Article
-    , article : Timeline (WebData String)
+    , article : Timeline (WebData (ArticleOutcome Msg))
     , windowSize : WindowSize
     , themeName : ThemeName
     }
 
 
 type Msg
-    = ArticleReceived (WebData String)
+    = ArticleReceived (WebData (ArticleOutcome Msg))
     | FrameReceived Time.Posix
     | WindowResized Int Int
     | LoadArticle String
@@ -107,7 +112,12 @@ update msg model =
               }
             , Http.get
                 { url = "articles/" ++ title ++ ".emu"
-                , expect = Http.expectString (RemoteData.fromResult >> ArticleReceived)
+                , expect =
+                    Http.expectString
+                        (RemoteData.fromResult
+                            >> RemoteData.map (Mark.compile document)
+                            >> ArticleReceived
+                        )
                 }
             )
 
@@ -160,15 +170,15 @@ articleListView =
         )
 
 
-articleView : String -> Element msg
+articleView : ArticleOutcome msg -> Element msg
 articleView =
     lazy
-        (\source ->
+        (\articleOutcome ->
             textColumn
                 [ width fill
                 , height fill
                 ]
-                (case Mark.compile document source of
+                (case articleOutcome of
                     Mark.Success article ->
                         let
                             title =
@@ -198,7 +208,7 @@ articleView =
         )
 
 
-remoteDataView : Theme -> Timeline (WebData String) -> Element msg
+remoteDataView : Theme -> Timeline (WebData (ArticleOutcome msg)) -> Element msg
 remoteDataView =
     lazy2
         (\theme article ->
@@ -242,12 +252,12 @@ remoteDataView =
                         ]
                         (text "Error loading article")
 
-                RemoteData.Success source ->
-                    articleView source
+                RemoteData.Success outcome ->
+                    articleView outcome
         )
 
 
-articleReaderView : Theme -> Timeline (WebData String) -> Element msg
+articleReaderView : Theme -> Timeline (WebData (ArticleOutcome msg)) -> Element msg
 articleReaderView theme article =
     row
         [ width (fillPortion 4)
@@ -272,7 +282,7 @@ articleReaderView theme article =
         ]
 
 
-bodyView : Theme -> List Article -> Timeline (WebData String) -> Element Msg
+bodyView : Theme -> List Article -> Timeline (WebData (ArticleOutcome Msg)) -> Element Msg
 bodyView theme articles article =
     row
         [ width fill
