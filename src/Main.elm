@@ -4,20 +4,20 @@ import Animator exposing (Animator, Timeline)
 import Article exposing (document, viewErrors)
 import Browser exposing (Document)
 import Browser.Events
-import Element exposing (Element, centerX, centerY, clipY, column, el, fill, fillPortion, focusStyle, height, layoutWith, mouseOver, none, paddingEach, paddingXY, pointer, px, row, scrollbarY, shrink, spacing, text, textColumn, width)
+import Element exposing (Color, Element, centerX, centerY, clipY, column, el, fill, fillPortion, focusStyle, height, layoutWith, mouseOver, none, paddingEach, paddingXY, pointer, px, row, scrollbarY, shrink, spacing, text, textColumn, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events exposing (onClick)
 import Element.Font as Font
-import Element.Lazy exposing (lazy)
-import Http exposing (Error(..))
+import Element.Lazy exposing (lazy, lazy2)
+import Http exposing (Error(..), get)
 import Loader exposing (defaultConfig)
 import Mark
 import Platform.Cmd as Cmd
 import RemoteData exposing (WebData)
-import Resources.Color exposing (backgroundColor, borderColor, lightPanelColor, panelColor, textColor)
 import Resources.Font exposing (baseFont, bodyFontSize, giantFontSize, headingFontSize, smallFontSize, subheadingFontSize)
 import Resources.Scrollbar as Scrollbar
+import Resources.Theme exposing (Theme, ThemeName(..), getTheme)
 import Time
 
 
@@ -36,6 +36,7 @@ type alias Model =
     { articles : List Article
     , article : Timeline (WebData String)
     , windowSize : WindowSize
+    , themeName : ThemeName
     }
 
 
@@ -70,6 +71,7 @@ init windowSize =
                 ]
       , article = Animator.init RemoteData.NotAsked
       , windowSize = windowSize
+      , themeName = Dark
       }
     , Cmd.none
     )
@@ -110,12 +112,12 @@ update msg model =
             )
 
 
-headerView : Element Msg
-headerView =
+headerView : Theme -> Element Msg
+headerView theme =
     row
         [ width fill
         , height (px 75)
-        , Border.color borderColor
+        , Border.color theme.borderColor
         , Border.widthEach
             { allSidesZero
                 | bottom = 1
@@ -124,15 +126,15 @@ headerView =
         []
 
 
-articleListView : List Article -> Element Msg
+articleListView : Theme -> List Article -> Element Msg
 articleListView =
-    lazy
-        (\articles ->
+    lazy2
+        (\theme articles ->
             column
                 [ width fill
                 , height fill
-                , Background.color panelColor
-                , Border.color borderColor
+                , Background.color theme.panelColor
+                , Border.color theme.borderColor
                 , Border.widthEach { allSidesZero | right = 1 }
                 , paddingXY 10 10
                 , spacing 10
@@ -143,12 +145,12 @@ articleListView =
                             [ Font.size smallFontSize
                             , width fill
                             , height shrink
-                            , Border.color borderColor
+                            , Border.color theme.borderColor
                             , Border.width 1
                             , paddingXY 20 10
                             , Border.rounded 5
                             , pointer
-                            , mouseOver [ Background.color lightPanelColor ]
+                            , mouseOver [ Background.color theme.panelHighlightColor ]
                             , onClick (LoadArticle article.title)
                             ]
                             (text article.title)
@@ -196,10 +198,10 @@ articleView =
         )
 
 
-remoteDataView : Timeline (WebData String) -> Element msg
+remoteDataView : Theme -> Timeline (WebData String) -> Element msg
 remoteDataView =
-    lazy
-        (\article ->
+    lazy2
+        (\theme article ->
             case Animator.current article of
                 RemoteData.NotAsked ->
                     el
@@ -213,7 +215,7 @@ remoteDataView =
                     el [ centerX, centerY ]
                         (Loader.bars
                             { defaultConfig
-                                | color = panelColor
+                                | color = theme.panelColor
                             }
                             article
                         )
@@ -245,8 +247,8 @@ remoteDataView =
         )
 
 
-articleReaderView : Timeline (WebData String) -> Element msg
-articleReaderView article =
+articleReaderView : Theme -> Timeline (WebData String) -> Element msg
+articleReaderView theme article =
     row
         [ width (fillPortion 4)
         , height fill
@@ -264,38 +266,46 @@ articleReaderView article =
                 , height fill
                 , spacing 20
                 ]
-                (remoteDataView article)
+                (remoteDataView theme article)
             , el [ width fill ] none
             ]
         ]
 
 
-bodyView : Model -> Element Msg
-bodyView model =
+bodyView : Theme -> List Article -> Timeline (WebData String) -> Element Msg
+bodyView theme articles article =
     row
         [ width fill
         , height fill
         , clipY
         ]
-        [ articleListView model.articles
-        , articleReaderView model.article
+        [ articleListView theme articles
+        , articleReaderView theme article
         ]
 
 
 rootView : Model -> Element Msg
 rootView model =
+    let
+        theme =
+            getTheme model.themeName
+    in
     column
         [ width fill
         , height (px model.windowSize.height)
-        , Background.color backgroundColor
+        , Background.color theme.backgroundColor
         ]
-        [ headerView
-        , bodyView model
+        [ headerView theme
+        , bodyView theme model.articles model.article
         ]
 
 
 view : Model -> Document Msg
 view model =
+    let
+        theme =
+            getTheme model.themeName
+    in
     { title = "Programming Course"
     , body =
         [ layoutWith
@@ -309,8 +319,8 @@ view model =
             }
             [ Font.size bodyFontSize
             , Font.family baseFont
-            , Font.color textColor
-            , Scrollbar.color borderColor
+            , Font.color theme.textColor
+            , Scrollbar.color theme.borderColor
             ]
             (rootView model)
         ]
