@@ -4,6 +4,7 @@ import Animator exposing (Animator, Timeline)
 import Article exposing (CompiledArticle, document, viewErrors)
 import Browser exposing (Document)
 import Browser.Events
+import Components.Loader exposing (defaultConfig)
 import Element exposing (Element, centerX, centerY, clipY, column, el, fill, fillPortion, focusStyle, height, layoutWith, mouseOver, none, paddingEach, paddingXY, pointer, px, row, scrollbarY, shrink, spacing, text, textColumn, width)
 import Element.Background as Background
 import Element.Border as Border
@@ -11,7 +12,6 @@ import Element.Events exposing (onClick)
 import Element.Font as Font
 import Element.Lazy exposing (lazy, lazy2)
 import Http exposing (Error(..), get)
-import Loader exposing (defaultConfig)
 import Mark exposing (Outcome, Partial)
 import Mark.Error exposing (Error)
 import Platform.Cmd as Cmd
@@ -223,7 +223,7 @@ remoteDataView =
 
                 RemoteData.Loading ->
                     el [ centerX, centerY ]
-                        (Loader.bars
+                        (Components.Loader.bars
                             { defaultConfig
                                 | color = theme.panelColor
                             }

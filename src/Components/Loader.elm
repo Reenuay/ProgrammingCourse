@@ -1,4 +1,4 @@
-module Loader exposing (..)
+module Components.Loader exposing (..)
 
 import Animator exposing (Timeline)
 import Element exposing (Color, Element, alignBottom, el, fill, height, none, padding, px, rgb255, row, spacing, width)
