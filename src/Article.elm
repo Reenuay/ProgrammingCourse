@@ -1,4 +1,4 @@
-module Article exposing (..)
+module Article exposing (document, viewErrors)
 
 import Element exposing (Element, el, paragraph, spacing, text)
 import Element.Font as Font
