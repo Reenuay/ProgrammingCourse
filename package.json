@@ -1,5 +1,5 @@
 {
-    "description": "Testing Elm Markup",
+    "description": "Programming Course",
     "scripts": {
         "debug": "elm-live src/Main.elm --open --hot --dir=public -- --output=public/main.js"
     },
