@@ -33,20 +33,20 @@ type alias Article =
     }
 
 
-type alias ArticleOutcome msg =
+type alias ArticleCompilationOutcome msg =
     Outcome (List Error) (Partial (CompiledArticle msg)) (CompiledArticle msg)
 
 
 type alias Model =
     { articles : List Article
-    , article : Timeline (WebData (ArticleOutcome Msg))
+    , article : Timeline (WebData (ArticleCompilationOutcome Msg))
     , windowSize : WindowSize
     , themeName : ThemeName
     }
 
 
 type Msg
-    = ArticleReceived (WebData (ArticleOutcome Msg))
+    = ArticleReceived (WebData (ArticleCompilationOutcome Msg))
     | FrameReceived Time.Posix
     | WindowResized Int Int
     | LoadArticle String
@@ -170,7 +170,7 @@ articleListView =
         )
 
 
-articleView : ArticleOutcome msg -> Element msg
+articleView : ArticleCompilationOutcome msg -> Element msg
 articleView =
     lazy
         (\articleOutcome ->
@@ -208,7 +208,7 @@ articleView =
         )
 
 
-remoteDataView : Theme -> Timeline (WebData (ArticleOutcome msg)) -> Element msg
+remoteDataView : Theme -> Timeline (WebData (ArticleCompilationOutcome msg)) -> Element msg
 remoteDataView =
     lazy2
         (\theme article ->
@@ -257,7 +257,7 @@ remoteDataView =
         )
 
 
-articleReaderView : Theme -> Timeline (WebData (ArticleOutcome msg)) -> Element msg
+articleReaderView : Theme -> Timeline (WebData (ArticleCompilationOutcome msg)) -> Element msg
 articleReaderView theme article =
     row
         [ width (fillPortion 4)
@@ -282,7 +282,7 @@ articleReaderView theme article =
         ]
 
 
-bodyView : Theme -> List Article -> Timeline (WebData (ArticleOutcome Msg)) -> Element Msg
+bodyView : Theme -> List Article -> Timeline (WebData (ArticleCompilationOutcome Msg)) -> Element Msg
 bodyView theme articles article =
     row
         [ width fill
