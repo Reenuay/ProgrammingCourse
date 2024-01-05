@@ -10,13 +10,13 @@ import Element.Border as Border
 import Element.Events exposing (onClick)
 import Element.Font as Font
 import Element.Lazy exposing (lazy)
-import Http
+import Http exposing (Error(..))
 import Loader exposing (defaultConfig)
 import Mark
 import Platform.Cmd as Cmd
 import RemoteData exposing (WebData)
 import Resources.Color exposing (backgroundColor, borderColor, lightPanelColor, panelColor, textColor)
-import Resources.Font exposing (baseFont, bodyFontSize, headingFontSize, smallFontSize, subheadingFontSize)
+import Resources.Font exposing (baseFont, bodyFontSize, giantFontSize, headingFontSize, smallFontSize, subheadingFontSize)
 import Resources.Scrollbar as Scrollbar
 import Time
 
@@ -217,6 +217,20 @@ remoteDataView =
                             }
                             article
                         )
+
+                RemoteData.Failure (BadStatus 404) ->
+                    column [ centerX, centerY, spacing 40 ]
+                        [ el
+                            [ Font.size giantFontSize
+                            , centerX
+                            ]
+                            (text "¯\\_(ツ)_/¯")
+                        , el
+                            [ Font.size subheadingFontSize
+                            , centerX
+                            ]
+                            (text "Article not found")
+                        ]
 
                 RemoteData.Failure _ ->
                     el

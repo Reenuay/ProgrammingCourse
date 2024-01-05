@@ -1,4 +1,4 @@
-module Resources.Font exposing (baseFont, bodyFontSize, headingFontSize, smallFontSize, subheadingFontSize)
+module Resources.Font exposing (baseFont, bodyFontSize, giantFontSize, headingFontSize, smallFontSize, subheadingFontSize)
 
 import Element
 import Element.Font as Font exposing (Font)
@@ -28,6 +28,11 @@ subheadingFontSize =
 headingFontSize : Int
 headingFontSize =
     scaled 4
+
+
+giantFontSize : Int
+giantFontSize =
+    scaled 6
 
 
 baseFont : List Font
