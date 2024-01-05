@@ -9,6 +9,7 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Events exposing (onClick)
 import Element.Font as Font
+import Element.Lazy exposing (lazy)
 import Http
 import Loader exposing (defaultConfig)
 import Mark
@@ -33,8 +34,7 @@ type alias Article =
 
 type alias Model =
     { articles : List Article
-    , source : WebData String
-    , timeline : Timeline ()
+    , article : Timeline (WebData String)
     , windowSize : WindowSize
     }
 
@@ -46,32 +46,29 @@ type Msg
     | LoadArticle String
 
 
-zeroSides : { top : number, bottom : number, left : number, right : number }
-zeroSides =
+allSidesZero : { top : number, bottom : number, left : number, right : number }
+allSidesZero =
     { top = 0, bottom = 0, left = 0, right = 0 }
 
 
 animator : Animator Model
 animator =
     Animator.animator
-        |> Animator.watching
-            .timeline
-            (\newTimeline model -> { model | timeline = newTimeline })
-
-
-articles : List String
-articles =
-    [ "Example"
-    , "Another example"
-    , "Yet another example"
-    ]
+        |> Animator.watchingWith
+            .article
+            (\newTimeline model -> { model | article = newTimeline })
+            (\article -> RemoteData.isLoading article)
 
 
 init : WindowSize -> ( Model, Cmd Msg )
 init windowSize =
-    ( { articles = List.map (\title -> { title = title }) articles
-      , source = RemoteData.NotAsked
-      , timeline = Animator.init ()
+    ( { articles =
+            List.map (\title -> { title = title })
+                [ "Example"
+                , "Another example"
+                , "Yet another example"
+                ]
+      , article = Animator.init RemoteData.NotAsked
       , windowSize = windowSize
       }
     , Cmd.none
@@ -81,9 +78,10 @@ init windowSize =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        ArticleReceived result ->
+        ArticleReceived source ->
             ( { model
-                | source = result
+                | article =
+                    Animator.go Animator.immediately source model.article
               }
             , Cmd.none
             )
@@ -101,7 +99,10 @@ update msg model =
             )
 
         LoadArticle title ->
-            ( { model | source = RemoteData.Loading }
+            ( { model
+                | article =
+                    Animator.go Animator.immediately RemoteData.Loading model.article
+              }
             , Http.get
                 { url = "articles/" ++ title ++ ".emu"
                 , expect = Http.expectString (RemoteData.fromResult >> ArticleReceived)
@@ -109,38 +110,30 @@ update msg model =
             )
 
 
-layout : Model -> Element Msg
-layout model =
-    -- Root
-    column
+headerView : Element Msg
+headerView =
+    row
         [ width fill
-        , height (px model.windowSize.height)
-        , Background.color backgroundColor
+        , height (px 75)
+        , Border.color borderColor
+        , Border.widthEach
+            { allSidesZero
+                | bottom = 1
+            }
         ]
-        [ -- Header
-          row
-            [ width fill
-            , height (px 75)
-            , Border.color borderColor
-            , Border.widthEach
-                { zeroSides
-                    | bottom = 1
-                }
-            ]
-            []
-        , --Body
-          row
-            [ width fill
-            , height fill
-            , clipY
-            ]
-            [ -- Left panel
-              column
+        []
+
+
+articleListView : List Article -> Element Msg
+articleListView =
+    lazy
+        (\articles ->
+            column
                 [ width fill
                 , height fill
                 , Background.color panelColor
                 , Border.color borderColor
-                , Border.widthEach { zeroSides | right = 1 }
+                , Border.widthEach { allSidesZero | right = 1 }
                 , paddingXY 10 10
                 , spacing 10
                 ]
@@ -160,75 +153,136 @@ layout model =
                             ]
                             (text article.title)
                     )
-                    model.articles
+                    articles
                 )
-            , -- Article
-              row
-                [ width (fillPortion 4)
+        )
+
+
+articleView : String -> Element msg
+articleView =
+    lazy
+        (\source ->
+            textColumn
+                [ width fill
                 , height fill
-                , paddingXY 4 10
                 ]
-                [ row
-                    [ width fill
-                    , height fill
-                    , paddingXY 0 30
-                    , scrollbarY
-                    ]
-                    [ el [ width fill ] none
-                    , el
-                        [ width (fillPortion 2)
-                        , height fill
-                        , spacing 20
-                        ]
-                        (case model.source of
-                            RemoteData.NotAsked ->
-                                el [ Font.size subheadingFontSize, centerX, centerY ] (text "No article is open")
-
-                            RemoteData.Loading ->
-                                el [ centerX, centerY ]
-                                    (Loader.view
-                                        { defaultConfig
-                                            | color = panelColor
-                                        }
-                                        model.timeline
-                                    )
-
-                            RemoteData.Failure _ ->
-                                el [ centerX, centerY ] (text "Error!")
-
-                            RemoteData.Success source ->
-                                textColumn
-                                    [ width fill
-                                    , height fill
+                (case Mark.compile document source of
+                    Mark.Success article ->
+                        let
+                            title =
+                                [ el
+                                    [ Font.size headingFontSize
+                                    , paddingEach { allSidesZero | bottom = 30 }
+                                    , Font.semiBold
                                     ]
-                                <|
-                                    case Mark.compile document source of
-                                        Mark.Success article ->
-                                            el
-                                                [ Font.size headingFontSize
-                                                , paddingEach { zeroSides | bottom = 30 }
-                                                , Font.semiBold
-                                                ]
-                                                (text article.metadata.title)
-                                                :: article.body
-                                                ++ [ el [ height (px 60) ] none ]
+                                    (text article.metadata.title)
+                                ]
 
-                                        Mark.Almost { result, errors } ->
-                                            result.body ++ viewErrors errors
+                            footer =
+                                [ el [ height (px 60) ] none ]
+                        in
+                        List.concat
+                            [ title
+                            , article.body
+                            , footer
+                            ]
 
-                                        Mark.Failure errors ->
-                                            viewErrors errors
+                    Mark.Almost { result, errors } ->
+                        result.body ++ viewErrors errors
+
+                    Mark.Failure errors ->
+                        viewErrors errors
+                )
+        )
+
+
+remoteDataView : Timeline (WebData String) -> Element msg
+remoteDataView =
+    lazy
+        (\article ->
+            case Animator.current article of
+                RemoteData.NotAsked ->
+                    el
+                        [ Font.size subheadingFontSize
+                        , centerX
+                        , centerY
+                        ]
+                        (text "No article is open")
+
+                RemoteData.Loading ->
+                    el [ centerX, centerY ]
+                        (Loader.view
+                            { defaultConfig
+                                | color = panelColor
+                            }
+                            article
                         )
-                    , el [ width fill ] none
-                    ]
-                ]
+
+                RemoteData.Failure _ ->
+                    el
+                        [ Font.size subheadingFontSize
+                        , centerX
+                        , centerY
+                        ]
+                        (text "Error loading article")
+
+                RemoteData.Success source ->
+                    articleView source
+        )
+
+
+articleReaderView : Timeline (WebData String) -> Element msg
+articleReaderView article =
+    row
+        [ width (fillPortion 4)
+        , height fill
+        , paddingXY 4 10
+        ]
+        [ row
+            [ width fill
+            , height fill
+            , paddingXY 0 30
+            , scrollbarY
             ]
+            [ el [ width fill ] none
+            , el
+                [ width (fillPortion 2)
+                , height fill
+                , spacing 20
+                ]
+                (remoteDataView article)
+            , el [ width fill ] none
+            ]
+        ]
+
+
+bodyView : Model -> Element Msg
+bodyView model =
+    row
+        [ width fill
+        , height fill
+        , clipY
+        ]
+        [ articleListView model.articles
+        , articleReaderView model.article
+        ]
+
+
+rootView : Model -> Element Msg
+rootView model =
+    column
+        [ width fill
+        , height (px model.windowSize.height)
+        , Background.color backgroundColor
+        ]
+        [ headerView
+        , bodyView model
         ]
 
 
 view : Model -> Document Msg
 view model =
-    { title = "Test Elm Markup"
+    { title = "Programming Course"
     , body =
         [ layoutWith
             { options =
@@ -244,7 +298,7 @@ view model =
             , Font.color textColor
             , Scrollbar.color borderColor
             ]
-            (layout model)
+            (rootView model)
         ]
     }
 
