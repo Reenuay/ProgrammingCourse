@@ -1,21 +1,19 @@
 module Main exposing (main)
 
 import Animator exposing (Animator, Timeline)
-import Animator.Css exposing (backgroundColor, borderColor)
 import Article exposing (CompiledArticle, document, viewErrors)
 import Browser exposing (Document)
 import Browser.Events
 import Common.Color
 import Components.Loader as Loader
 import Components.ThemeToggle as ThemeSwitch
-import Dict exposing (merge)
-import Element exposing (Color, Element, alignRight, centerX, centerY, clipY, column, el, fill, fillPortion, focusStyle, height, layoutWith, mouseOver, none, padding, paddingEach, paddingXY, pointer, px, row, scrollbarY, shrink, spacing, text, textColumn, width)
+import Element exposing (Element, alignRight, centerX, centerY, clipY, column, el, fill, fillPortion, focusStyle, height, layoutWith, mouseOver, none, padding, paddingEach, paddingXY, pointer, px, row, scrollbarY, shrink, spacing, text, textColumn, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events exposing (onClick)
 import Element.Font as Font
 import Element.Lazy exposing (lazy, lazy2)
-import Http exposing (Error(..), get)
+import Http exposing (Error(..))
 import Mark exposing (Outcome, Partial)
 import Mark.Error exposing (Error)
 import Platform.Cmd as Cmd

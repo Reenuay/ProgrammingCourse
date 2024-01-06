@@ -1,11 +1,10 @@
 module Components.ThemeToggle exposing (Config, defaultConfig, toggle)
 
 import Animator exposing (Timeline)
-import Element exposing (Color, Element, el, fill, height, none, padding, pointer, px, rgb255, row, width)
+import Element exposing (Color, Element, el, height, none, padding, pointer, px, rgb255, row, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events exposing (onClick)
-import Element.Input exposing (thumb)
 import Resources.Theme exposing (ThemeName(..))
 
 
