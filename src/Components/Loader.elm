@@ -32,12 +32,12 @@ bars config timeline =
             config.size - paddingValue * 2
 
         animateHeight i =
-            Animator.move timeline
-                (\_ ->
+            (Animator.move timeline <|
+                \_ ->
                     Animator.wave 0.5 1
                         |> Animator.shift (toFloat i / barsCount)
                         |> Animator.loop Animator.slowly
-                )
+            )
                 * toFloat maxBarHeight
                 |> round
 

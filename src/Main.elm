@@ -1,11 +1,15 @@
 module Main exposing (main)
 
 import Animator exposing (Animator, Timeline)
+import Animator.Css exposing (backgroundColor, borderColor)
 import Article exposing (CompiledArticle, document, viewErrors)
 import Browser exposing (Document)
 import Browser.Events
-import Components.Loader exposing (defaultConfig)
-import Element exposing (Element, centerX, centerY, clipY, column, el, fill, fillPortion, focusStyle, height, layoutWith, mouseOver, none, paddingEach, paddingXY, pointer, px, row, scrollbarY, shrink, spacing, text, textColumn, width)
+import Common.Color
+import Components.Loader as Loader
+import Components.ThemeToggle as ThemeSwitch
+import Dict exposing (merge)
+import Element exposing (Color, Element, alignRight, centerX, centerY, clipY, column, el, fill, fillPortion, focusStyle, height, layoutWith, mouseOver, none, padding, paddingEach, paddingXY, pointer, px, row, scrollbarY, shrink, spacing, text, textColumn, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events exposing (onClick)
@@ -18,7 +22,7 @@ import Platform.Cmd as Cmd
 import RemoteData exposing (WebData)
 import Resources.Font exposing (baseFont, bodyFontSize, giantFontSize, headingFontSize, smallFontSize, subheadingFontSize)
 import Resources.Scrollbar as Scrollbar
-import Resources.Theme exposing (Theme, ThemeName(..), getTheme)
+import Resources.Theme exposing (Theme, ThemeName(..), getTheme, toggleTheme)
 import Time
 
 
@@ -41,7 +45,7 @@ type alias Model =
     { articles : List Article
     , article : Timeline (WebData (ArticleCompilationOutcome Msg))
     , windowSize : WindowSize
-    , themeName : ThemeName
+    , themeName : Timeline ThemeName
     }
 
 
@@ -50,6 +54,7 @@ type Msg
     | FrameReceived Time.Posix
     | WindowResized Int Int
     | LoadArticle String
+    | ToggleTheme
 
 
 allSidesZero : { top : number, bottom : number, left : number, right : number }
@@ -64,6 +69,9 @@ animator =
             .article
             (\newTimeline model -> { model | article = newTimeline })
             (\article -> RemoteData.isLoading article)
+        |> Animator.watching
+            .themeName
+            (\newTimeline model -> { model | themeName = newTimeline })
 
 
 init : WindowSize -> ( Model, Cmd Msg )
@@ -76,7 +84,7 @@ init windowSize =
                 ]
       , article = Animator.init RemoteData.NotAsked
       , windowSize = windowSize
-      , themeName = Dark
+      , themeName = Animator.init Dark
       }
     , Cmd.none
     )
@@ -121,19 +129,46 @@ update msg model =
                 }
             )
 
+        ToggleTheme ->
+            let
+                currentThemeName =
+                    Animator.current model.themeName
+            in
+            ( { model
+                | themeName =
+                    Animator.go Animator.quickly
+                        (toggleTheme currentThemeName)
+                        model.themeName
+              }
+            , Cmd.none
+            )
 
-headerView : Theme -> Element Msg
-headerView theme =
+
+headerView : Theme -> Timeline ThemeName -> Element Msg
+headerView theme themeName =
+    let
+        config =
+            ThemeSwitch.defaultConfig
+    in
     row
         [ width fill
-        , height (px 75)
         , Border.color theme.borderColor
         , Border.widthEach
             { allSidesZero
                 | bottom = 1
             }
+        , padding 20
         ]
-        []
+        [ el [ alignRight, centerY ]
+            (ThemeSwitch.toggle
+                { config
+                    | trackColor = theme.panelColor
+                    , thumbColor = theme.textColor
+                }
+                themeName
+                ToggleTheme
+            )
+        ]
 
 
 articleListView : Theme -> List Article -> Element Msg
@@ -210,6 +245,10 @@ articleView =
 
 remoteDataView : Theme -> Timeline (WebData (ArticleCompilationOutcome msg)) -> Element msg
 remoteDataView =
+    let
+        config =
+            Loader.defaultConfig
+    in
     lazy2
         (\theme article ->
             case Animator.current article of
@@ -223,8 +262,8 @@ remoteDataView =
 
                 RemoteData.Loading ->
                     el [ centerX, centerY ]
-                        (Components.Loader.bars
-                            { defaultConfig
+                        (Loader.bars
+                            { config
                                 | color = theme.panelColor
                             }
                             article
@@ -294,27 +333,50 @@ bodyView theme articles article =
         ]
 
 
-rootView : Model -> Element Msg
-rootView model =
+mergeThemes : Timeline ThemeName -> Theme
+mergeThemes themeName =
     let
-        theme =
-            getTheme model.themeName
+        isInTransition =
+            Animator.current themeName /= Animator.arrived themeName
     in
-    column
-        [ width fill
-        , height (px model.windowSize.height)
-        , Background.color theme.backgroundColor
-        ]
-        [ headerView theme
-        , bodyView theme model.articles model.article
-        ]
+    if isInTransition then
+        let
+            darkTheme =
+                getTheme Dark
+
+            lightTheme =
+                getTheme Light
+
+            mergeColor mapper builder =
+                (Animator.color themeName <|
+                    \name ->
+                        case name of
+                            Light ->
+                                mapper lightTheme |> Common.Color.fromElementColor
+
+                            Dark ->
+                                mapper darkTheme |> Common.Color.fromElementColor
+                )
+                    |> Common.Color.toElementColor
+                    |> builder
+        in
+        Theme
+            |> mergeColor .backgroundColor
+            |> mergeColor .panelColor
+            |> mergeColor .panelHighlightColor
+            |> mergeColor .borderColor
+            |> mergeColor .textColor
+
+    else
+        Animator.current themeName
+            |> getTheme
 
 
 view : Model -> Document Msg
 view model =
     let
         theme =
-            getTheme model.themeName
+            mergeThemes model.themeName
     in
     { title = "Programming Course"
     , body =
@@ -332,7 +394,15 @@ view model =
             , Font.color theme.textColor
             , Scrollbar.color theme.borderColor
             ]
-            (rootView model)
+            (column
+                [ width fill
+                , height (px model.windowSize.height)
+                , Background.color theme.backgroundColor
+                ]
+                [ headerView theme model.themeName
+                , bodyView theme model.articles model.article
+                ]
+            )
         ]
     }
 

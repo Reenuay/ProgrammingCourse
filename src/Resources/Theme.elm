@@ -1,4 +1,4 @@
-module Resources.Theme exposing (Theme, ThemeName(..), getTheme)
+module Resources.Theme exposing (Theme, ThemeName(..), getTheme, toggleTheme)
 
 import Element exposing (Color, rgb255)
 
@@ -21,11 +21,11 @@ getTheme : ThemeName -> Theme
 getTheme theme =
     case theme of
         Light ->
-            { backgroundColor = rgb255 240 240 240
-            , panelColor = rgb255 220 220 220
-            , panelHighlightColor = rgb255 230 230 230
-            , borderColor = rgb255 200 200 200
-            , textColor = rgb255 50 50 50
+            { backgroundColor = rgb255 232 230 236
+            , panelColor = rgb255 212 210 216
+            , panelHighlightColor = rgb255 202 200 206
+            , borderColor = rgb255 192 190 196
+            , textColor = rgb255 42 40 46
             }
 
         Dark ->
@@ -35,3 +35,13 @@ getTheme theme =
             , borderColor = rgb255 72 70 76
             , textColor = rgb255 192 190 196
             }
+
+
+toggleTheme : ThemeName -> ThemeName
+toggleTheme theme =
+    case theme of
+        Light ->
+            Dark
+
+        Dark ->
+            Light
