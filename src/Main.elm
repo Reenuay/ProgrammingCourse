@@ -241,8 +241,8 @@ articleView =
         )
 
 
-remoteDataView : Theme -> Timeline (WebData (ArticleCompilationOutcome msg)) -> Element msg
-remoteDataView =
+articleLoaderView : Theme -> Timeline (WebData (ArticleCompilationOutcome msg)) -> Element msg
+articleLoaderView =
     let
         config =
             Loader.defaultConfig
@@ -255,6 +255,7 @@ remoteDataView =
                         [ Font.size subheadingFontSize
                         , centerX
                         , centerY
+                        , Style.style [ Style.unselectable ]
                         ]
                         (text "No article is open")
 
@@ -272,11 +273,13 @@ remoteDataView =
                         [ el
                             [ Font.size giantFontSize
                             , centerX
+                            , Style.style [ Style.unselectable ]
                             ]
                             (text "¯\\_(ツ)_/¯")
                         , el
                             [ Font.size subheadingFontSize
                             , centerX
+                            , Style.style [ Style.unselectable ]
                             ]
                             (text "Article not found")
                         ]
@@ -286,6 +289,7 @@ remoteDataView =
                         [ Font.size subheadingFontSize
                         , centerX
                         , centerY
+                        , Style.style [ Style.unselectable ]
                         ]
                         (text "Error loading article")
 
@@ -294,8 +298,8 @@ remoteDataView =
         )
 
 
-articleReaderView : Theme -> Timeline (WebData (ArticleCompilationOutcome msg)) -> Element msg
-articleReaderView theme article =
+articleContainerView : Theme -> Timeline (WebData (ArticleCompilationOutcome msg)) -> Element msg
+articleContainerView theme article =
     row
         [ width (fillPortion 6)
         , height fill
@@ -313,7 +317,7 @@ articleReaderView theme article =
                 , height fill
                 , spacing 20
                 ]
-                (remoteDataView theme article)
+                (articleLoaderView theme article)
             , el [ width (fillPortion 2) ] none
             ]
         ]
@@ -327,7 +331,7 @@ bodyView theme articles article =
         , clipY
         ]
         [ articleListView theme articles
-        , articleReaderView theme article
+        , articleContainerView theme article
         ]
 
 
@@ -399,8 +403,8 @@ view model =
             , Font.family baseFont
             , Font.color theme.textColor
             , Style.style
-                [ Style.ScrollbarThumbColor theme.borderColor
-                , Style.TextSelectionColor textSelectionColor
+                [ Style.scrollbarThumbColor theme.borderColor
+                , Style.textSelectionColor textSelectionColor
                 ]
             ]
             (column

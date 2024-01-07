@@ -1,4 +1,4 @@
-module Resources.Style exposing (Style(..), style)
+module Resources.Style exposing (Style, scrollbarThumbColor, style, textSelectionColor, unselectable)
 
 import Element exposing (Attribute, Color, htmlAttribute, toRgb)
 import Html.Attributes exposing (attribute)
@@ -7,6 +7,22 @@ import Html.Attributes exposing (attribute)
 type Style
     = ScrollbarThumbColor Color
     | TextSelectionColor Color
+    | Unselectable
+
+
+scrollbarThumbColor : Color -> Style
+scrollbarThumbColor =
+    ScrollbarThumbColor
+
+
+textSelectionColor : Color -> Style
+textSelectionColor =
+    TextSelectionColor
+
+
+unselectable : Style
+unselectable =
+    Unselectable
 
 
 colorToStyleEntry : String -> Color -> String
@@ -20,7 +36,7 @@ colorToStyleEntry property color =
             channel * 255 |> round
     in
     property
-        ++ ": rgba("
+        ++ ":rgba("
         ++ String.fromInt (toByte red)
         ++ ","
         ++ String.fromInt (toByte green)
@@ -44,6 +60,9 @@ style styles =
 
                             TextSelectionColor color ->
                                 colorToStyleEntry "--text-selection-color" color
+
+                            Unselectable ->
+                                "-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;"
                     )
                 |> String.join ""
     in
