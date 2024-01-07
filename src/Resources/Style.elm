@@ -25,8 +25,8 @@ unselectable =
     Unselectable
 
 
-colorToStyleEntry : String -> Color -> List String
-colorToStyleEntry property color =
+colorToCssRgba : String -> Color -> List String
+colorToCssRgba property color =
     let
         { red, green, blue, alpha } =
             toRgb color
@@ -57,10 +57,10 @@ style styles =
                     (\s ->
                         case s of
                             ScrollbarThumbColor color ->
-                                colorToStyleEntry "--scrollbar-color" color
+                                colorToCssRgba "--scrollbar-color" color
 
                             TextSelectionColor color ->
-                                colorToStyleEntry "--text-selection-color" color
+                                colorToCssRgba "--text-selection-color" color
 
                             Unselectable ->
                                 [ "-webkit-user-select:none"
