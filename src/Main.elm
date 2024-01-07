@@ -297,7 +297,7 @@ remoteDataView =
 articleReaderView : Theme -> Timeline (WebData (ArticleCompilationOutcome msg)) -> Element msg
 articleReaderView theme article =
     row
-        [ width (fillPortion 4)
+        [ width (fillPortion 6)
         , height fill
         , paddingXY 4 10
         ]
@@ -307,14 +307,14 @@ articleReaderView theme article =
             , paddingXY 0 30
             , scrollbarY
             ]
-            [ el [ width fill ] none
+            [ el [ width (fillPortion 2) ] none
             , el
-                [ width (fillPortion 2)
+                [ width (fillPortion 3)
                 , height fill
                 , spacing 20
                 ]
                 (remoteDataView theme article)
-            , el [ width fill ] none
+            , el [ width (fillPortion 2) ] none
             ]
         ]
 
@@ -398,8 +398,10 @@ view model =
             [ Font.size bodyFontSize
             , Font.family baseFont
             , Font.color theme.textColor
-            , Style.scrollbarThumbColor theme.borderColor
-            , Style.textSelectionColor textSelectionColor
+            , Style.style
+                [ Style.ScrollbarThumbColor theme.borderColor
+                , Style.TextSelectionColor textSelectionColor
+                ]
             ]
             (column
                 [ width fill

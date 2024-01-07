@@ -1,11 +1,16 @@
-module Resources.Style exposing (scrollbarThumbColor, textSelectionColor)
+module Resources.Style exposing (Style(..), style)
 
 import Element exposing (Attribute, Color, htmlAttribute, toRgb)
 import Html.Attributes exposing (attribute)
 
 
-colorToRgba : Color -> String
-colorToRgba color =
+type Style
+    = ScrollbarThumbColor Color
+    | TextSelectionColor Color
+
+
+colorToStyleEntry : String -> Color -> String
+colorToStyleEntry property color =
     let
         { red, green, blue, alpha } =
             toRgb color
@@ -14,7 +19,8 @@ colorToRgba color =
         toByte channel =
             channel * 255 |> round
     in
-    "rgba("
+    property
+        ++ ": rgba("
         ++ String.fromInt (toByte red)
         ++ ","
         ++ String.fromInt (toByte green)
@@ -22,16 +28,24 @@ colorToRgba color =
         ++ String.fromInt (toByte blue)
         ++ ","
         ++ String.fromFloat alpha
-        ++ ")"
+        ++ ");"
 
 
-scrollbarThumbColor : Color -> Attribute msg
-scrollbarThumbColor color =
-    attribute "style" ("--scrollbar-color: " ++ colorToRgba color ++ ";")
-        |> htmlAttribute
+style : List Style -> Attribute msg
+style styles =
+    let
+        css =
+            styles
+                |> List.map
+                    (\s ->
+                        case s of
+                            ScrollbarThumbColor color ->
+                                colorToStyleEntry "--scrollbar-color" color
 
-
-textSelectionColor : Color -> Attribute msg
-textSelectionColor color =
-    attribute "style" ("--text-selection-color: " ++ colorToRgba color ++ ";")
+                            TextSelectionColor color ->
+                                colorToStyleEntry "--text-selection-color" color
+                    )
+                |> String.join ""
+    in
+    attribute "style" css
         |> htmlAttribute

@@ -12,17 +12,17 @@ scaled i =
 
 smallFontSize : Int
 smallFontSize =
-    scaled 1
+    scaled -1
 
 
 bodyFontSize : Int
 bodyFontSize =
-    scaled 2
+    scaled 1
 
 
 subheadingFontSize : Int
 subheadingFontSize =
-    scaled 3
+    scaled 2
 
 
 headingFontSize : Int
