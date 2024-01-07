@@ -17,7 +17,7 @@ type alias Config =
 
 defaultConfig : Config
 defaultConfig =
-    { size = 64
+    { size = 48
     , trackColor = rgb255 0 0 0
     , thumbColor = rgb255 255 255 255
     }
