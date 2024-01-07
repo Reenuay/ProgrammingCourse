@@ -1,12 +1,16 @@
+/* Remove tap highlight and outline */
 * {
     -webkit-tap-highlight-color: transparent;
     outline: none;
 }
 
+/* Declare variables */
 :root {
     --scrollbar-color: lightgray;
+    --text-selection-color: black;
 }
 
+/* Customize scrollbar */
 ::-webkit-scrollbar {
     width: 8px;
 }
@@ -18,4 +22,13 @@
 ::-webkit-scrollbar-thumb {
     background-color: var(--scrollbar-color);
     border-radius: 4px;
+}
+
+/* Customize text selection */
+::selection {
+    background: var(--text-selection-color);
+}
+
+::-moz-selection {
+    background: var(--text-selection-color);
 }

@@ -1,4 +1,4 @@
-module Resources.Font exposing (baseFont, bodyFontSize, giantFontSize, headingFontSize, smallFontSize, subheadingFontSize)
+module Resources.FontSize exposing (baseFont, bodyFontSize, giantFontSize, headingFontSize, smallFontSize, subheadingFontSize)
 
 import Element
 import Element.Font as Font exposing (Font)

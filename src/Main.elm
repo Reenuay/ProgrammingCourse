@@ -4,10 +4,11 @@ import Animator exposing (Animator, Timeline)
 import Article exposing (CompiledArticle, document, viewErrors)
 import Browser exposing (Document)
 import Browser.Events
+import Color exposing (toRgba)
 import Common.Color
 import Components.Loader as Loader
 import Components.ThemeToggle as ThemeSwitch
-import Element exposing (Element, alignRight, centerX, centerY, clipY, column, el, fill, fillPortion, focusStyle, height, layoutWith, mouseOver, none, padding, paddingEach, paddingXY, pointer, px, row, scrollbarY, shrink, spacing, text, textColumn, width)
+import Element exposing (Element, alignRight, centerX, centerY, clipY, column, el, fill, fillPortion, focusStyle, fromRgb, height, layoutWith, mouseOver, none, padding, paddingEach, paddingXY, pointer, px, row, scrollbarY, shrink, spacing, text, textColumn, toRgb, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events exposing (onClick)
@@ -18,8 +19,8 @@ import Mark exposing (Outcome, Partial)
 import Mark.Error exposing (Error)
 import Platform.Cmd as Cmd
 import RemoteData exposing (WebData)
-import Resources.Font exposing (baseFont, bodyFontSize, giantFontSize, headingFontSize, smallFontSize, subheadingFontSize)
-import Resources.Scrollbar as Scrollbar
+import Resources.FontSize exposing (baseFont, bodyFontSize, giantFontSize, headingFontSize, smallFontSize, subheadingFontSize)
+import Resources.Style as Style
 import Resources.Theme exposing (Theme, ThemeName(..), getTheme, toggleTheme)
 import Time
 
@@ -364,6 +365,7 @@ mergeThemes themeName =
             |> mergeColor .panelHighlightColor
             |> mergeColor .borderColor
             |> mergeColor .textColor
+            |> mergeColor .accentColor
 
     else
         Animator.current themeName
@@ -375,6 +377,13 @@ view model =
     let
         theme =
             mergeThemes model.themeName
+
+        accentColorDeconstructed =
+            toRgb theme.accentColor
+
+        textSelectionColor =
+            { accentColorDeconstructed | alpha = 0.2 }
+                |> fromRgb
     in
     { title = "Programming Course"
     , body =
@@ -390,7 +399,8 @@ view model =
             [ Font.size bodyFontSize
             , Font.family baseFont
             , Font.color theme.textColor
-            , Scrollbar.color theme.borderColor
+            , Style.scrollbarThumbColor theme.borderColor
+            , Style.textSelectionColor textSelectionColor
             ]
             (column
                 [ width fill

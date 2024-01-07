@@ -14,6 +14,7 @@ type alias Theme =
     , panelHighlightColor : Color
     , borderColor : Color
     , textColor : Color
+    , accentColor : Color
     }
 
 
@@ -26,6 +27,7 @@ getTheme theme =
             , panelHighlightColor = rgb255 202 200 206
             , borderColor = rgb255 192 190 196
             , textColor = rgb255 42 40 46
+            , accentColor = rgb255 255 0 81
             }
 
         Dark ->
@@ -34,6 +36,7 @@ getTheme theme =
             , panelHighlightColor = rgb255 62 60 66
             , borderColor = rgb255 72 70 76
             , textColor = rgb255 192 190 196
+            , accentColor = rgb255 255 0 81
             }
 
 
