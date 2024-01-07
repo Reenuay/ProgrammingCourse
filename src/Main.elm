@@ -399,7 +399,8 @@ view model =
                     }
                 ]
             }
-            [ Font.size bodyFontSize
+            [ Background.color theme.backgroundColor
+            , Font.size bodyFontSize
             , Font.family baseFont
             , Font.color theme.textColor
             , Style.style
@@ -409,8 +410,7 @@ view model =
             ]
             (column
                 [ width fill
-                , height (px model.windowSize.height)
-                , Background.color theme.backgroundColor
+                , height fill
                 ]
                 [ headerView theme model.themeName
                 , bodyView theme model.articles model.article
