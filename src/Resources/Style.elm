@@ -25,7 +25,7 @@ unselectable =
     Unselectable
 
 
-colorToStyleEntry : String -> Color -> String
+colorToStyleEntry : String -> Color -> List String
 colorToStyleEntry property color =
     let
         { red, green, blue, alpha } =
@@ -44,7 +44,8 @@ colorToStyleEntry property color =
         ++ String.fromInt (toByte blue)
         ++ ","
         ++ String.fromFloat alpha
-        ++ ");"
+        ++ ")"
+        |> List.singleton
 
 
 style : List Style -> Attribute msg
@@ -52,7 +53,7 @@ style styles =
     let
         css =
             styles
-                |> List.map
+                |> List.concatMap
                     (\s ->
                         case s of
                             ScrollbarThumbColor color ->
@@ -62,9 +63,13 @@ style styles =
                                 colorToStyleEntry "--text-selection-color" color
 
                             Unselectable ->
-                                "-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;"
+                                [ "-webkit-user-select:none"
+                                , "-moz-user-select:none"
+                                , "-ms-user-select:none"
+                                , "user-select:none"
+                                ]
                     )
-                |> String.join ""
+                |> String.join ";"
     in
     attribute "style" css
         |> htmlAttribute
