@@ -4,7 +4,6 @@ import Animator exposing (Animator, Timeline)
 import Article exposing (CompiledArticle, document, viewErrors)
 import Browser exposing (Document)
 import Browser.Events
-import Color exposing (toRgba)
 import Common.Color
 import Components.Loader as Loader
 import Components.ThemeToggle as ThemeSwitch
