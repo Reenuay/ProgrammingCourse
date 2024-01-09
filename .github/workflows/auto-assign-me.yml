@@ -9,7 +9,6 @@ jobs:
     - name: Assign me
       run: |
         issue_number=${{ github.event.issue.number }}
-        response=$(gh api repos/${{ github.repository }}/issues/$issue_number/assignees -f assignees='["Reenuay"]' -X POST)
-        echo "API response: $response"
+        gh issue update $issue_number --assignee "Reenuay"
       env:
         GH_TOKEN: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
