@@ -1,0 +1,14 @@
+name: Automatically assign me to new issues
+on:
+  issues:
+    types: [opened]
+jobs:
+  assign-me:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Assign me
+      run: |
+        issue_number=${{ github.event.issue.number }}
+        gh api repos/${{ github.repository }}/issues/$issue_number/assignees -f assignees='["Reenuay"]' -X POST
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
