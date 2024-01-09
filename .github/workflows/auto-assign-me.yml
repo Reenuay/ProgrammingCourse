@@ -9,6 +9,6 @@ jobs:
     - name: Assign me
       run: |
         issue_number=${{ github.event.issue.number }}
-        gh issue update $issue_number --assignee "Reenuay"
+        gh issue edit $issue_number --add-assignee "Reenuay"
       env:
         GH_TOKEN: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
