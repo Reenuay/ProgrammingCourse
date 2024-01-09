@@ -12,4 +12,4 @@ jobs:
         response=$(gh api repos/${{ github.repository }}/issues/$issue_number/assignees -f assignees='["Reenuay"]' -X POST)
         echo "API response: $response"
       env:
-        GITHUB_TOKEN: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
+        GH_TOKEN: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
