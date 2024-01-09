@@ -6,6 +6,8 @@ jobs:
   assign-me:
     runs-on: ubuntu-latest
     steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
     - name: Assign me
       run: |
         issue_number=${{ github.event.issue.number }}
