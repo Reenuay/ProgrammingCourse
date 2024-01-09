@@ -11,4 +11,4 @@ jobs:
         issue_number=${{ github.event.issue.number }}
         gh api repos/${{ github.repository }}/issues/$issue_number/assignees -f assignees='["Reenuay"]' -X POST
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
