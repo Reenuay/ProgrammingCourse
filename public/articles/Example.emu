@@ -1,5 +1,6 @@
 |> Article
     title = Example
+    author = Rustam Azizov
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas quam magna, mattis sit amet egestas eget, lacinia vitae orci. Donec consequat urna vitae justo congue, id consectetur eros pellentesque. Integer sit amet ante eleifend, tempor erat quis, elementum mauris. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Nulla consequat diam ut mauris auctor, in aliquet nisi convallis. Nullam interdum erat sit amet purus vulputate, quis iaculis tortor elementum. Phasellus vel commodo nisi. Maecenas sit amet felis tempor, euismod turpis ac, fermentum sem.
 Nunc aliquam pulvinar leo vitae tempor. Donec dui quam, vestibulum in dolor eu, dignissim euismod ex. Nam sodales nulla est. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Fusce a placerat mauris, in molestie eros. Suspendisse ut porttitor urna. Aenean mollis lectus lorem, nec pellentesque lectus euismod eget. Integer pretium arcu sed purus consectetur, sed consequat tellus accumsan. Curabitur bibendum enim quis purus scelerisque vehicula. Nullam aliquam euismod massa ac porta.

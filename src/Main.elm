@@ -1,13 +1,16 @@
 module Main exposing (main)
 
 import Animator exposing (Animator, Timeline)
-import Article exposing (CompiledArticle, document, viewErrors)
+import Article.AST exposing (Article)
+import Article.Parser
+import Article.Renderer
 import Browser exposing (Document)
 import Browser.Events
 import Common.Color
+import Common.Util exposing (allSidesZero)
 import Components.Loader as Loader
 import Components.ThemeToggle as ThemeSwitch
-import Element exposing (Element, alignRight, centerX, centerY, clipY, column, el, fill, fillPortion, focusStyle, fromRgb, height, layoutWith, mouseOver, none, padding, paddingEach, paddingXY, pointer, px, row, scrollbarY, shrink, spacing, text, textColumn, toRgb, width)
+import Element exposing (Element, alignRight, centerX, centerY, clipY, column, el, fill, fillPortion, focusStyle, fromRgb, height, layoutWith, mouseOver, none, padding, paddingXY, pointer, row, scrollbarY, shrink, spacing, text, textColumn, toRgb, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events exposing (onClick)
@@ -18,7 +21,7 @@ import Mark exposing (Outcome, Partial)
 import Mark.Error exposing (Error)
 import Platform.Cmd as Cmd
 import RemoteData exposing (WebData)
-import Resources.FontSize exposing (baseFont, bodyFontSize, giantFontSize, headingFontSize, smallFontSize, subheadingFontSize)
+import Resources.FontSize exposing (baseFont, bodyFontSize, giantFontSize, smallFontSize, subheadingFontSize)
 import Resources.Style as Style
 import Resources.Theme exposing (Theme, ThemeName(..), getTheme, toggleTheme)
 import Time
@@ -30,34 +33,29 @@ type alias WindowSize =
     }
 
 
-type alias Article =
+type alias A =
     { title : String
     }
 
 
-type alias ArticleCompilationOutcome msg =
-    Outcome (List Error) (Partial (CompiledArticle msg)) (CompiledArticle msg)
+type alias ArticleCompilationOutcome =
+    Outcome (List Error) (Partial Article) Article
 
 
 type alias Model =
-    { articles : List Article
-    , article : Timeline (WebData (ArticleCompilationOutcome Msg))
+    { articles : List A
+    , article : Timeline (WebData ArticleCompilationOutcome)
     , windowSize : WindowSize
     , themeName : Timeline ThemeName
     }
 
 
 type Msg
-    = ArticleReceived (WebData (ArticleCompilationOutcome Msg))
+    = ArticleReceived (WebData ArticleCompilationOutcome)
     | FrameReceived Time.Posix
     | WindowResized Int Int
     | LoadArticle String
     | ToggleTheme
-
-
-allSidesZero : { top : number, bottom : number, left : number, right : number }
-allSidesZero =
-    { top = 0, bottom = 0, left = 0, right = 0 }
 
 
 animator : Animator Model
@@ -121,7 +119,7 @@ update msg model =
                 , expect =
                     Http.expectString
                         (RemoteData.fromResult
-                            >> RemoteData.map (Mark.compile document)
+                            >> RemoteData.map (Mark.compile Article.Parser.article)
                             >> ArticleReceived
                         )
                 }
@@ -169,7 +167,7 @@ headerView theme themeName =
         ]
 
 
-articleListView : Theme -> List Article -> Element Msg
+articleListView : Theme -> List A -> Element Msg
 articleListView =
     lazy2
         (\theme articles ->
@@ -203,7 +201,7 @@ articleListView =
         )
 
 
-articleView : ArticleCompilationOutcome msg -> Element msg
+articleView : ArticleCompilationOutcome -> Element msg
 articleView =
     lazy
         (\articleOutcome ->
@@ -213,35 +211,18 @@ articleView =
                 ]
                 (case articleOutcome of
                     Mark.Success article ->
-                        let
-                            title =
-                                [ el
-                                    [ Font.size headingFontSize
-                                    , paddingEach { allSidesZero | bottom = 30 }
-                                    , Font.semiBold
-                                    ]
-                                    (text article.metadata.title)
-                                ]
-
-                            footer =
-                                [ el [ height (px 60) ] none ]
-                        in
-                        List.concat
-                            [ title
-                            , article.body
-                            , footer
-                            ]
+                        Article.Renderer.render article
 
                     Mark.Almost { result, errors } ->
-                        result.body ++ viewErrors errors
+                        Article.Renderer.render result ++ Article.Renderer.renderErrors errors
 
                     Mark.Failure errors ->
-                        viewErrors errors
+                        Article.Renderer.renderErrors errors
                 )
         )
 
 
-articleLoaderView : Theme -> Timeline (WebData (ArticleCompilationOutcome msg)) -> Element msg
+articleLoaderView : Theme -> Timeline (WebData ArticleCompilationOutcome) -> Element msg
 articleLoaderView =
     let
         config =
@@ -298,7 +279,7 @@ articleLoaderView =
         )
 
 
-articleContainerView : Theme -> Timeline (WebData (ArticleCompilationOutcome msg)) -> Element msg
+articleContainerView : Theme -> Timeline (WebData ArticleCompilationOutcome) -> Element msg
 articleContainerView theme article =
     row
         [ width (fillPortion 6)
@@ -323,7 +304,7 @@ articleContainerView theme article =
         ]
 
 
-bodyView : Theme -> List Article -> Timeline (WebData (ArticleCompilationOutcome Msg)) -> Element Msg
+bodyView : Theme -> List A -> Timeline (WebData ArticleCompilationOutcome) -> Element Msg
 bodyView theme articles article =
     row
         [ width fill
@@ -338,10 +319,10 @@ bodyView theme articles article =
 mergeThemes : Timeline ThemeName -> Theme
 mergeThemes themeName =
     let
-        isInTransition =
+        inTransition =
             Animator.current themeName /= Animator.arrived themeName
     in
-    if isInTransition then
+    if inTransition then
         let
             darkTheme =
                 getTheme Dark
