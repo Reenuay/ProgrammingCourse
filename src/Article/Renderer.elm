@@ -1,9 +1,10 @@
-module Article.Renderer exposing (render, renderErrors)
+module Article.Renderer exposing (render, renderErrors, renderOutcome)
 
-import Article.AST exposing (Article, Block(..), StyledText)
+import Article.AST exposing (Article, ArticleCompilationOutcome, Block(..), StyledText)
 import Common.Util exposing (allSidesZero)
-import Element exposing (Element, el, height, none, paddingEach, paragraph, px, spacing, text)
+import Element exposing (Element, el, fill, height, none, paddingEach, paragraph, px, spacing, text, textColumn, width)
 import Element.Font as Font
+import Mark exposing (Outcome(..))
 import Mark.Error as Error exposing (Error)
 import Resources.FontSize exposing (headingFontSize)
 
@@ -62,3 +63,21 @@ renderErrors errors =
     List.map
         (Error.toHtml Error.Dark >> Element.html)
         errors
+
+
+renderOutcome : ArticleCompilationOutcome -> Element msg
+renderOutcome outcome =
+    textColumn
+        [ width fill
+        , height fill
+        ]
+        (case outcome of
+            Mark.Success article ->
+                render article
+
+            Mark.Almost { result, errors } ->
+                render result ++ renderErrors errors
+
+            Mark.Failure errors ->
+                renderErrors errors
+        )

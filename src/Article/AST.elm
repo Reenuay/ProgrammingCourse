@@ -1,4 +1,7 @@
-module Article.AST exposing (Article, Block(..), Metadata, StyledText, Styles)
+module Article.AST exposing (Article, ArticleCompilationOutcome, Block(..), Metadata, StyledText, Styles)
+
+import Mark exposing (Outcome, Partial)
+import Mark.Error exposing (Error)
 
 
 type alias Metadata =
@@ -19,3 +22,7 @@ type Block
 
 type alias Article =
     { metadata : Metadata, body : List Block }
+
+
+type alias ArticleCompilationOutcome =
+    Outcome (List Error) (Partial Article) Article

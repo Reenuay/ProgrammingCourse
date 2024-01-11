@@ -1,7 +1,7 @@
 module Main exposing (main)
 
 import Animator exposing (Animator, Timeline)
-import Article.AST exposing (Article)
+import Article.AST exposing (ArticleCompilationOutcome)
 import Article.Parser
 import Article.Renderer
 import Browser exposing (Document)
@@ -17,8 +17,7 @@ import Element.Events exposing (onClick)
 import Element.Font as Font
 import Element.Lazy exposing (lazy, lazy2)
 import Http exposing (Error(..))
-import Mark exposing (Outcome, Partial)
-import Mark.Error exposing (Error)
+import Mark
 import Platform.Cmd as Cmd
 import RemoteData exposing (WebData)
 import Resources.FontSize exposing (baseFont, bodyFontSize, giantFontSize, smallFontSize, subheadingFontSize)
@@ -36,10 +35,6 @@ type alias WindowSize =
 type alias A =
     { title : String
     }
-
-
-type alias ArticleCompilationOutcome =
-    Outcome (List Error) (Partial Article) Article
 
 
 type alias Model =
@@ -203,23 +198,7 @@ articleListView =
 
 articleView : ArticleCompilationOutcome -> Element msg
 articleView =
-    lazy
-        (\articleOutcome ->
-            textColumn
-                [ width fill
-                , height fill
-                ]
-                (case articleOutcome of
-                    Mark.Success article ->
-                        Article.Renderer.render article
-
-                    Mark.Almost { result, errors } ->
-                        Article.Renderer.render result ++ Article.Renderer.renderErrors errors
-
-                    Mark.Failure errors ->
-                        Article.Renderer.renderErrors errors
-                )
-        )
+    lazy Article.Renderer.renderOutcome
 
 
 articleLoaderView : Theme -> Timeline (WebData ArticleCompilationOutcome) -> Element msg
