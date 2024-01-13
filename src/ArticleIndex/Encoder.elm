@@ -1,10 +1,10 @@
 module ArticleIndex.Encoder exposing (toJson)
 
 import ArticleIndex.Core exposing (Article, ArticleIndex)
-import Json.Encode as Encode
+import Json.Encode as Encode exposing (Value)
 
 
-articleEncoder : Article -> Encode.Value
+articleEncoder : Article -> Value
 articleEncoder article =
     Encode.object
         [ ( "id", Encode.string article.id )
@@ -14,7 +14,7 @@ articleEncoder article =
         ]
 
 
-articleIndexEncoder : ArticleIndex -> Encode.Value
+articleIndexEncoder : ArticleIndex -> Value
 articleIndexEncoder index =
     Encode.object
         [ ( "articles", Encode.dict identity articleEncoder index.articles )
