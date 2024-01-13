@@ -49,10 +49,7 @@ function readFiles(dirPath) {
                         }
 
                         app.ports.receiveInput.send({
-                            relativePath: filePath.replace(
-                                "public\\articles\\",
-                                ""
-                            ),
+                            relativePath: filePath.replace(/public[\\\/]/, ""),
                             content,
                         });
 
