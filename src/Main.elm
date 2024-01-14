@@ -4,13 +4,15 @@ import Animator exposing (Animator, Timeline)
 import Article.AST exposing (ArticleCompilationOutcome)
 import Article.Parser
 import Article.Renderer
+import ArticleIndex.Core as ArticleIndex exposing (Article, ArticleIndex)
+import ArticleIndex.Decoder
 import Browser exposing (Document)
 import Browser.Events
 import Common.Color
 import Common.Util exposing (allSidesZero)
 import Components.Loader as Loader
 import Components.ThemeToggle as ThemeSwitch
-import Element exposing (Element, alignRight, centerX, centerY, clipY, column, el, fill, fillPortion, focusStyle, fromRgb, height, layoutWith, mouseOver, none, padding, paddingXY, pointer, row, scrollbarY, shrink, spacing, text, textColumn, toRgb, width)
+import Element exposing (Element, alignRight, centerX, centerY, clipY, column, el, fill, fillPortion, focusStyle, fromRgb, height, html, layoutWith, mouseOver, none, padding, paddingXY, pointer, row, scrollbarY, shrink, spacing, text, toRgb, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events exposing (onClick)
@@ -18,6 +20,8 @@ import Element.Font as Font
 import Element.Lazy exposing (lazy, lazy2)
 import Http exposing (Error(..))
 import Mark
+import Material.Icons.Outlined
+import Material.Icons.Types exposing (Coloring(..))
 import Platform.Cmd as Cmd
 import RemoteData exposing (WebData)
 import Resources.FontSize exposing (baseFont, bodyFontSize, giantFontSize, smallFontSize, subheadingFontSize)
@@ -32,21 +36,17 @@ type alias WindowSize =
     }
 
 
-type alias A =
-    { title : String
-    }
-
-
 type alias Model =
-    { articles : List A
-    , article : Timeline (WebData ArticleCompilationOutcome)
+    { articleIndex : WebData ArticleIndex
+    , openArticle : Timeline (WebData ArticleCompilationOutcome)
     , windowSize : WindowSize
     , themeName : Timeline ThemeName
     }
 
 
 type Msg
-    = ArticleReceived (WebData ArticleCompilationOutcome)
+    = ArticleIndexReceived (WebData ArticleIndex)
+    | ArticleReceived (WebData ArticleCompilationOutcome)
     | FrameReceived Time.Posix
     | WindowResized Int Int
     | LoadArticle String
@@ -57,8 +57,8 @@ animator : Animator Model
 animator =
     Animator.animator
         |> Animator.watchingWith
-            .article
-            (\newTimeline model -> { model | article = newTimeline })
+            .openArticle
+            (\newTimeline model -> { model | openArticle = newTimeline })
             (\article -> RemoteData.isLoading article)
         |> Animator.watching
             .themeName
@@ -67,27 +67,32 @@ animator =
 
 init : WindowSize -> ( Model, Cmd Msg )
 init windowSize =
-    ( { articles =
-            List.map (\title -> { title = title })
-                [ "Example"
-                , "Another example"
-                , "Yet another example"
-                ]
-      , article = Animator.init RemoteData.NotAsked
+    ( { articleIndex = RemoteData.Loading
+      , openArticle = Animator.init RemoteData.NotAsked
       , windowSize = windowSize
       , themeName = Animator.init Dark
       }
-    , Cmd.none
+    , Http.get
+        { url = "articleIndex.json"
+        , expect =
+            Http.expectJson (RemoteData.fromResult >> ArticleIndexReceived)
+                ArticleIndex.Decoder.articleIndexDecoder
+        }
     )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        ArticleIndexReceived source ->
+            ( { model | articleIndex = source }
+            , Cmd.none
+            )
+
         ArticleReceived source ->
             ( { model
-                | article =
-                    Animator.go Animator.immediately source model.article
+                | openArticle =
+                    Animator.go Animator.immediately source model.openArticle
               }
             , Cmd.none
             )
@@ -98,16 +103,14 @@ update msg model =
             )
 
         WindowResized width height ->
-            ( { model
-                | windowSize = { width = width, height = height }
-              }
+            ( { model | windowSize = { width = width, height = height } }
             , Cmd.none
             )
 
         LoadArticle title ->
             ( { model
-                | article =
-                    Animator.go Animator.immediately RemoteData.Loading model.article
+                | openArticle =
+                    Animator.go Animator.immediately RemoteData.Loading model.openArticle
               }
             , Http.get
                 { url = "articles/" ++ title ++ ".emu"
@@ -127,9 +130,7 @@ update msg model =
             in
             ( { model
                 | themeName =
-                    Animator.go Animator.quickly
-                        (toggleTheme currentThemeName)
-                        model.themeName
+                    Animator.go Animator.quickly (toggleTheme currentThemeName) model.themeName
               }
             , Cmd.none
             )
@@ -162,7 +163,7 @@ headerView theme themeName =
         ]
 
 
-articleListView : Theme -> List A -> Element Msg
+articleListView : Theme -> List Article -> Element Msg
 articleListView =
     lazy2
         (\theme articles ->
@@ -253,8 +254,8 @@ articleLoaderView =
                         ]
                         (text "Error loading article")
 
-                RemoteData.Success outcome ->
-                    articleView outcome
+                RemoteData.Success compilationOutcome ->
+                    articleView compilationOutcome
         )
 
 
@@ -283,16 +284,53 @@ articleContainerView theme article =
         ]
 
 
-bodyView : Theme -> List A -> Timeline (WebData ArticleCompilationOutcome) -> Element Msg
-bodyView theme articles article =
-    row
-        [ width fill
-        , height fill
-        , clipY
-        ]
-        [ articleListView theme articles
-        , articleContainerView theme article
-        ]
+bodyView : Theme -> WebData ArticleIndex -> Timeline (WebData ArticleCompilationOutcome) -> Element Msg
+bodyView theme articleIndex article =
+    let
+        config =
+            Loader.defaultConfig
+
+        loader =
+            el [ centerX, centerY ]
+                (Loader.bars
+                    { config
+                        | color = theme.panelColor
+                    }
+                    article
+                )
+    in
+    case articleIndex of
+        RemoteData.NotAsked ->
+            loader
+
+        RemoteData.Loading ->
+            loader
+
+        RemoteData.Success index ->
+            let
+                articles =
+                    ArticleIndex.getArticlesOrdered index
+            in
+            row
+                [ width fill
+                , height fill
+                , clipY
+                ]
+                [ articleListView theme articles
+                , articleContainerView theme article
+                ]
+
+        RemoteData.Failure _ ->
+            column [ centerX, centerY, spacing 20 ]
+                [ el [ centerX ]
+                    (Material.Icons.Outlined.warning_amber 100 (Color (Common.Color.fromElementColor theme.textColor)) |> html)
+                , el
+                    [ Font.size subheadingFontSize
+                    , centerX
+                    , Style.style [ Style.unselectable ]
+                    ]
+                    (text "Error loading index file")
+                ]
 
 
 mergeThemes : Timeline ThemeName -> Theme
@@ -373,7 +411,7 @@ view model =
                 , height fill
                 ]
                 [ headerView theme model.themeName
-                , bodyView theme model.articles model.article
+                , bodyView theme model.articleIndex model.openArticle
                 ]
             )
         ]

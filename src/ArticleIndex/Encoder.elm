@@ -10,7 +10,7 @@ articleEncoder article =
         [ ( "id", Encode.string article.id )
         , ( "title", Encode.string article.title )
         , ( "author", Encode.string article.author )
-        , ( "relativePath", Encode.string article.relativePath )
+        , ( "path", Encode.string article.path )
         ]
 
 

@@ -1,7 +1,7 @@
-module ArticleIndex.Decoder exposing (fromJson)
+module ArticleIndex.Decoder exposing (articleIndexDecoder)
 
 import ArticleIndex.Core exposing (Article, ArticleIndex)
-import Json.Decode as Decode exposing (Decoder, Error)
+import Json.Decode as Decode exposing (Decoder)
 
 
 articleDecoder : Decoder Article
@@ -10,7 +10,7 @@ articleDecoder =
         (Decode.field "id" Decode.string)
         (Decode.field "title" Decode.string)
         (Decode.field "author" Decode.string)
-        (Decode.field "reativePath" Decode.string)
+        (Decode.field "path" Decode.string)
 
 
 articleIndexDecoder : Decoder ArticleIndex
@@ -18,8 +18,3 @@ articleIndexDecoder =
     Decode.map2 ArticleIndex
         (Decode.field "articles" (Decode.dict articleDecoder))
         (Decode.field "articleOrder" (Decode.list Decode.string))
-
-
-fromJson : String -> Result Error ArticleIndex
-fromJson json =
-    Decode.decodeString articleIndexDecoder json

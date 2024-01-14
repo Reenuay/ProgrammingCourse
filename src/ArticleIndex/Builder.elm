@@ -11,7 +11,7 @@ import Platform exposing (worker)
 
 
 type alias Content =
-    { relativePath : String, content : String }
+    { path : String, content : String }
 
 
 port receiveInput : (Content -> msg) -> Sub msg
@@ -62,7 +62,7 @@ parseArticle content =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Input { relativePath, content } ->
+        Input { path, content } ->
             case parseArticle content of
                 Ok { metadata } ->
                     let
@@ -75,7 +75,7 @@ update msg model =
                                 { id = title
                                 , title = title
                                 , author = author
-                                , relativePath = relativePath
+                                , path = path
                                 }
                                 model.articleIndex
                       }
