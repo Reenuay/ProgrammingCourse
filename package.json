@@ -1,7 +1,9 @@
 {
     "description": "Programming Course",
     "scripts": {
-        "debug": "elm-live src/Main.elm --open --hot --dir=public -- --output=public/main.js"
+        "build-lesson-index": "elm make src/LessonIndex/Builder.elm --output=lessonIndexBuilder.js --optimize && node buildLessonIndex.js",
+        "build": "npm run build-lesson-index && elm make src/Main.elm --output=public/main.js --optimize",
+        "debug": "npm run build-lesson-index && elm-live src/Main.elm --open --hot --dir=public -- --output=public/main.js"
     },
     "author": "Rustam Azizov",
     "license": "MIT"
