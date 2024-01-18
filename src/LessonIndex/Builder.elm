@@ -1,10 +1,10 @@
-port module ArticleIndex.Builder exposing (main)
+port module LessonIndex.Builder exposing (main)
 
-import Article.AST exposing (Article)
-import Article.Parser exposing (article)
-import ArticleIndex.Core as Index exposing (ArticleIndex)
-import ArticleIndex.Encoder
 import Json.Decode exposing (Error(..))
+import Lesson.AST exposing (Lesson)
+import Lesson.Parser exposing (lesson)
+import LessonIndex.Core as LessonIndex exposing (LessonIndex)
+import LessonIndex.Encoder
 import Mark exposing (Outcome(..))
 import Mark.Error
 import Platform exposing (worker)
@@ -28,7 +28,7 @@ port sendError : String -> Cmd msg
 
 type alias Model =
     { inputHasEnded : Bool
-    , articleIndex : ArticleIndex
+    , lessonIndex : LessonIndex
     }
 
 
@@ -40,17 +40,17 @@ type Msg
 init : () -> ( Model, Cmd msg )
 init _ =
     ( { inputHasEnded = False
-      , articleIndex = Index.empty
+      , lessonIndex = LessonIndex.empty
       }
     , Cmd.none
     )
 
 
-parseArticle : String -> Result (List String) Article
-parseArticle content =
-    case Mark.compile article content of
-        Mark.Success article ->
-            Ok article
+parseLesson : String -> Result (List String) Lesson
+parseLesson content =
+    case Mark.compile lesson content of
+        Mark.Success lesson ->
+            Ok lesson
 
         Mark.Almost { result } ->
             Ok result
@@ -63,21 +63,21 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Input { path, content } ->
-            case parseArticle content of
+            case parseLesson content of
                 Ok { metadata } ->
                     let
                         { title, author } =
                             metadata
                     in
                     ( { model
-                        | articleIndex =
-                            Index.addArticle
+                        | lessonIndex =
+                            LessonIndex.addLesson
                                 { id = title
                                 , title = title
                                 , author = author
                                 , path = path
                                 }
-                                model.articleIndex
+                                model.lessonIndex
                       }
                     , Cmd.none
                     )
@@ -86,7 +86,7 @@ update msg model =
                     ( model, sendError <| String.join "\n" errors )
 
         EndOfInput ->
-            ( { model | inputHasEnded = True }, sendResult <| ArticleIndex.Encoder.toJson model.articleIndex )
+            ( { model | inputHasEnded = True }, sendResult <| LessonIndex.Encoder.toJson model.lessonIndex )
 
 
 subscriptions : a -> Sub Msg

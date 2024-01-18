@@ -45,11 +45,11 @@ jobs:
             - name: Uglify main.js
               run: uglifyjs public/main.js --compress "pure_funcs=[F2,F3,F4,F5,F6,F7,F8,F9,A2,A3,A4,A5,A6,A7,A8,A9],pure_getters,keep_fargs=false,unsafe_comps,unsafe" | uglifyjs --mangle --output public/main.js
 
-            - name: Build articleIndexBuilder.js
-              run: elm make src/ArticleIndex/Builder.elm --output=articleIndexBuilder.js --optimize
+            - name: Build lessonIndexBuilder.js
+              run: elm make src/LessonIndex/Builder.elm --output=lessonIndexBuilder.js --optimize
 
-            - name: Build article index
-              run: node buildArticleIndex.js
+            - name: Build lesson index
+              run: node buildLessonIndex.js
 
             - name: Setup Pages
               uses: actions/configure-pages@v3

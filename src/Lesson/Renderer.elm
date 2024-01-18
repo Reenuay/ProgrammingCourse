@@ -1,9 +1,9 @@
-module Article.Renderer exposing (render, renderErrors, renderOutcome)
+module Lesson.Renderer exposing (render, renderErrors, renderOutcome)
 
-import Article.AST exposing (Article, ArticleCompilationOutcome, Block(..), StyledText)
 import Common.Util exposing (allSidesZero)
 import Element exposing (Element, el, fill, height, none, paddingEach, paragraph, px, spacing, text, textColumn, width)
 import Element.Font as Font
+import Lesson.AST exposing (Block(..), Lesson, LessonCompilationOutcome, StyledText)
 import Mark exposing (Outcome(..))
 import Mark.Error as Error exposing (Error)
 import Resources.FontSize exposing (headingFontSize)
@@ -36,8 +36,8 @@ block block_ =
             paragraph [ spacing 10 ] (List.map styledText text)
 
 
-render : Article -> List (Element msg)
-render article =
+render : Lesson -> List (Element msg)
+render lesson =
     let
         title =
             [ el
@@ -45,7 +45,7 @@ render article =
                 , paddingEach { allSidesZero | bottom = 30 }
                 , Font.semiBold
                 ]
-                (text article.metadata.title)
+                (text lesson.metadata.title)
             ]
 
         footer =
@@ -53,7 +53,7 @@ render article =
     in
     List.concat
         [ title
-        , List.map block article.body
+        , List.map block lesson.body
         , footer
         ]
 
@@ -65,15 +65,15 @@ renderErrors errors =
         errors
 
 
-renderOutcome : ArticleCompilationOutcome -> Element msg
+renderOutcome : LessonCompilationOutcome -> Element msg
 renderOutcome outcome =
     textColumn
         [ width fill
         , height fill
         ]
         (case outcome of
-            Mark.Success article ->
-                render article
+            Mark.Success lesson ->
+                render lesson
 
             Mark.Almost { result, errors } ->
                 render result ++ renderErrors errors

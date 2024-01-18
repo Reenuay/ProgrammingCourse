@@ -1,4 +1,4 @@
 /elm-stuff
 /public/main.js
-/public/articleIndex.json
-articleIndexBuilder.js
+/public/lessonIndex.json
+lessonIndexBuilder.js

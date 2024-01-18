@@ -1,12 +1,12 @@
-module Article.Parser exposing (article)
+module Lesson.Parser exposing (lesson)
 
-import Article.AST exposing (Article, Block(..), Metadata, StyledText)
+import Lesson.AST exposing (Block(..), Lesson, Metadata, StyledText)
 import Mark
 
 
 metadata : Mark.Block Metadata
 metadata =
-    Mark.record "Article"
+    Mark.record "Lesson"
         (\title author ->
             { title = title
             , author = author
@@ -25,8 +25,8 @@ styledText =
         )
 
 
-article : Mark.Document Article
-article =
+lesson : Mark.Document Lesson
+lesson =
     Mark.documentWith
         (\meta body ->
             { metadata = meta

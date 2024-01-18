@@ -1,4 +1,4 @@
-module Article.AST exposing (Article, ArticleCompilationOutcome, Block(..), Metadata, StyledText, Styles)
+module Lesson.AST exposing (Block(..), Lesson, LessonCompilationOutcome, Metadata, StyledText, Styles)
 
 import Mark exposing (Outcome, Partial)
 import Mark.Error exposing (Error)
@@ -20,9 +20,9 @@ type Block
     = Paragraph (List StyledText)
 
 
-type alias Article =
+type alias Lesson =
     { metadata : Metadata, body : List Block }
 
 
-type alias ArticleCompilationOutcome =
-    Outcome (List Error) (Partial Article) Article
+type alias LessonCompilationOutcome =
+    Outcome (List Error) (Partial Lesson) Lesson

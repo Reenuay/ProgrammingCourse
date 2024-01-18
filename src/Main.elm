@@ -1,11 +1,6 @@
 module Main exposing (main)
 
 import Animator exposing (Animator, Timeline)
-import Article.AST exposing (ArticleCompilationOutcome)
-import Article.Parser
-import Article.Renderer
-import ArticleIndex.Core as ArticleIndex exposing (Article, ArticleIndex)
-import ArticleIndex.Decoder
 import Browser exposing (Document)
 import Browser.Events
 import Common.Color
@@ -19,6 +14,11 @@ import Element.Events exposing (onClick)
 import Element.Font as Font
 import Element.Lazy exposing (lazy, lazy2)
 import Http exposing (Error(..))
+import Lesson.AST exposing (LessonCompilationOutcome)
+import Lesson.Parser
+import Lesson.Renderer
+import LessonIndex.Core as LessonIndex exposing (Lesson, LessonIndex)
+import LessonIndex.Decoder
 import Mark
 import Material.Icons.Outlined
 import Material.Icons.Types exposing (Coloring(..))
@@ -37,19 +37,19 @@ type alias WindowSize =
 
 
 type alias Model =
-    { articleIndex : WebData ArticleIndex
-    , openArticle : Timeline (WebData ArticleCompilationOutcome)
+    { lessonIndex : WebData LessonIndex
+    , openLesson : Timeline (WebData LessonCompilationOutcome)
     , windowSize : WindowSize
     , themeName : Timeline ThemeName
     }
 
 
 type Msg
-    = ArticleIndexReceived (WebData ArticleIndex)
-    | ArticleReceived (WebData ArticleCompilationOutcome)
+    = LessonIndexReceived (WebData LessonIndex)
+    | LessonReceived (WebData LessonCompilationOutcome)
     | FrameReceived Time.Posix
     | WindowResized Int Int
-    | LoadArticle String
+    | LoadLesson String
     | ToggleTheme
 
 
@@ -57,9 +57,9 @@ animator : Animator Model
 animator =
     Animator.animator
         |> Animator.watchingWith
-            .openArticle
-            (\newTimeline model -> { model | openArticle = newTimeline })
-            (\article -> RemoteData.isLoading article)
+            .openLesson
+            (\newTimeline model -> { model | openLesson = newTimeline })
+            (\lesson -> RemoteData.isLoading lesson)
         |> Animator.watching
             .themeName
             (\newTimeline model -> { model | themeName = newTimeline })
@@ -67,16 +67,16 @@ animator =
 
 init : WindowSize -> ( Model, Cmd Msg )
 init windowSize =
-    ( { articleIndex = RemoteData.Loading
-      , openArticle = Animator.init RemoteData.NotAsked
+    ( { lessonIndex = RemoteData.Loading
+      , openLesson = Animator.init RemoteData.NotAsked
       , windowSize = windowSize
       , themeName = Animator.init Dark
       }
     , Http.get
-        { url = "articleIndex.json"
+        { url = "lessonIndex.json"
         , expect =
-            Http.expectJson (RemoteData.fromResult >> ArticleIndexReceived)
-                ArticleIndex.Decoder.articleIndexDecoder
+            Http.expectJson (RemoteData.fromResult >> LessonIndexReceived)
+                LessonIndex.Decoder.lessonIndexDecoder
         }
     )
 
@@ -84,15 +84,15 @@ init windowSize =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        ArticleIndexReceived source ->
-            ( { model | articleIndex = source }
+        LessonIndexReceived source ->
+            ( { model | lessonIndex = source }
             , Cmd.none
             )
 
-        ArticleReceived source ->
+        LessonReceived source ->
             ( { model
-                | openArticle =
-                    Animator.go Animator.immediately source model.openArticle
+                | openLesson =
+                    Animator.go Animator.immediately source model.openLesson
               }
             , Cmd.none
             )
@@ -107,18 +107,18 @@ update msg model =
             , Cmd.none
             )
 
-        LoadArticle title ->
+        LoadLesson title ->
             ( { model
-                | openArticle =
-                    Animator.go Animator.immediately RemoteData.Loading model.openArticle
+                | openLesson =
+                    Animator.go Animator.immediately RemoteData.Loading model.openLesson
               }
             , Http.get
-                { url = "articles/" ++ title ++ ".emu"
+                { url = "lessons/" ++ title ++ ".emu"
                 , expect =
                     Http.expectString
                         (RemoteData.fromResult
-                            >> RemoteData.map (Mark.compile Article.Parser.article)
-                            >> ArticleReceived
+                            >> RemoteData.map (Mark.compile Lesson.Parser.lesson)
+                            >> LessonReceived
                         )
                 }
             )
@@ -163,10 +163,10 @@ headerView theme themeName =
         ]
 
 
-articleListView : Theme -> List Article -> Element Msg
-articleListView =
+lessonListView : Theme -> List Lesson -> Element Msg
+lessonListView =
     lazy2
-        (\theme articles ->
+        (\theme lessons ->
             column
                 [ width fill
                 , height fill
@@ -177,7 +177,7 @@ articleListView =
                 , spacing 10
                 ]
                 (List.map
-                    (\article ->
+                    (\lesson ->
                         el
                             [ Font.size smallFontSize
                             , width fill
@@ -188,29 +188,29 @@ articleListView =
                             , Border.rounded 5
                             , pointer
                             , mouseOver [ Background.color theme.panelHighlightColor ]
-                            , onClick (LoadArticle article.title)
+                            , onClick (LoadLesson lesson.title)
                             ]
-                            (text article.title)
+                            (text lesson.title)
                     )
-                    articles
+                    lessons
                 )
         )
 
 
-articleView : ArticleCompilationOutcome -> Element msg
-articleView =
-    lazy Article.Renderer.renderOutcome
+lessonView : LessonCompilationOutcome -> Element msg
+lessonView =
+    lazy Lesson.Renderer.renderOutcome
 
 
-articleLoaderView : Theme -> Timeline (WebData ArticleCompilationOutcome) -> Element msg
-articleLoaderView =
+lessonLoaderView : Theme -> Timeline (WebData LessonCompilationOutcome) -> Element msg
+lessonLoaderView =
     let
         config =
             Loader.defaultConfig
     in
     lazy2
-        (\theme article ->
-            case Animator.current article of
+        (\theme lesson ->
+            case Animator.current lesson of
                 RemoteData.NotAsked ->
                     el
                         [ Font.size subheadingFontSize
@@ -218,7 +218,7 @@ articleLoaderView =
                         , centerY
                         , Style.style [ Style.unselectable ]
                         ]
-                        (text "No article is open")
+                        (text "No lesson is open")
 
                 RemoteData.Loading ->
                     el [ centerX, centerY ]
@@ -226,7 +226,7 @@ articleLoaderView =
                             { config
                                 | color = theme.panelColor
                             }
-                            article
+                            lesson
                         )
 
                 RemoteData.Failure (BadStatus 404) ->
@@ -242,7 +242,7 @@ articleLoaderView =
                             , centerX
                             , Style.style [ Style.unselectable ]
                             ]
-                            (text "Article not found")
+                            (text "Lesson not found")
                         ]
 
                 RemoteData.Failure _ ->
@@ -252,15 +252,15 @@ articleLoaderView =
                         , centerY
                         , Style.style [ Style.unselectable ]
                         ]
-                        (text "Error loading article")
+                        (text "Error loading lesson")
 
                 RemoteData.Success compilationOutcome ->
-                    articleView compilationOutcome
+                    lessonView compilationOutcome
         )
 
 
-articleContainerView : Theme -> Timeline (WebData ArticleCompilationOutcome) -> Element msg
-articleContainerView theme article =
+lesssonContainerView : Theme -> Timeline (WebData LessonCompilationOutcome) -> Element msg
+lesssonContainerView theme lesson =
     row
         [ width (fillPortion 6)
         , height fill
@@ -278,14 +278,14 @@ articleContainerView theme article =
                 , height fill
                 , spacing 20
                 ]
-                (articleLoaderView theme article)
+                (lessonLoaderView theme lesson)
             , el [ width (fillPortion 2) ] none
             ]
         ]
 
 
-bodyView : Theme -> WebData ArticleIndex -> Timeline (WebData ArticleCompilationOutcome) -> Element Msg
-bodyView theme articleIndex article =
+bodyView : Theme -> WebData LessonIndex -> Timeline (WebData LessonCompilationOutcome) -> Element Msg
+bodyView theme lessonIndex lesson =
     let
         config =
             Loader.defaultConfig
@@ -296,10 +296,10 @@ bodyView theme articleIndex article =
                     { config
                         | color = theme.panelColor
                     }
-                    article
+                    lesson
                 )
     in
-    case articleIndex of
+    case lessonIndex of
         RemoteData.NotAsked ->
             loader
 
@@ -308,16 +308,16 @@ bodyView theme articleIndex article =
 
         RemoteData.Success index ->
             let
-                articles =
-                    ArticleIndex.getArticlesOrdered index
+                lessons =
+                    LessonIndex.getLessonsOrdered index
             in
             row
                 [ width fill
                 , height fill
                 , clipY
                 ]
-                [ articleListView theme articles
-                , articleContainerView theme article
+                [ lessonListView theme lessons
+                , lesssonContainerView theme lesson
                 ]
 
         RemoteData.Failure _ ->
@@ -411,7 +411,7 @@ view model =
                 , height fill
                 ]
                 [ headerView theme model.themeName
-                , bodyView theme model.articleIndex model.openArticle
+                , bodyView theme model.lessonIndex model.openLesson
                 ]
             )
         ]

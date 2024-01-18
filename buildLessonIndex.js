@@ -1,8 +1,8 @@
 const fs = require("fs");
 const path = require("path");
-const { Elm } = require("./articleIndexBuilder.js");
+const { Elm } = require("./lessonIndexBuilder.js");
 
-const app = Elm.ArticleIndex.Builder.init();
+const app = Elm.LessonIndex.Builder.init();
 
 app.ports.sendError.subscribe((error) => {
     console.error(error);
@@ -11,7 +11,7 @@ app.ports.sendError.subscribe((error) => {
 
 app.ports.sendResult.subscribe((result) => {
     fs.writeFile(
-        "public/articleIndex.json",
+        "public/lessonIndex.json",
         result.replace(/\\\\/g, "/"),
         (err) => {
             if (err) {
@@ -63,4 +63,4 @@ function readFiles(dirPath) {
     });
 }
 
-readFiles("public/articles");
+readFiles("public/lessons");
