@@ -71,7 +71,7 @@ update msg model =
                     in
                     ( { model
                         | lessonIndex =
-                            LessonIndex.addLesson
+                            LessonIndex.addLessonEntry
                                 { id = title
                                 , title = title
                                 , author = author

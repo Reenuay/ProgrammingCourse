@@ -1,9 +1,9 @@
-module Lesson.Index.Core exposing (Index, Lesson, addLesson, empty, getLessonsOrdered)
+module Lesson.Index.Core exposing (Index, LessonEntry, addLessonEntry, empty, getLessonsOrdered)
 
 import Dict exposing (Dict)
 
 
-type alias Lesson =
+type alias LessonEntry =
     { id : String
     , title : String
     , author : String
@@ -12,26 +12,26 @@ type alias Lesson =
 
 
 type alias Index =
-    { lessons : Dict String Lesson
+    { lessonEntries : Dict String LessonEntry
     , lessonOrder : List String
     }
 
 
 empty : Index
 empty =
-    { lessons = Dict.empty
+    { lessonEntries = Dict.empty
     , lessonOrder = []
     }
 
 
-addLesson : Lesson -> Index -> Index
-addLesson lesson lessonIndex =
+addLessonEntry : LessonEntry -> Index -> Index
+addLessonEntry lessonEntry lessonIndex =
     { lessonIndex
-        | lessons = Dict.insert lesson.id lesson lessonIndex.lessons
-        , lessonOrder = lesson.id :: lessonIndex.lessonOrder
+        | lessonEntries = Dict.insert lessonEntry.id lessonEntry lessonIndex.lessonEntries
+        , lessonOrder = lessonEntry.id :: lessonIndex.lessonOrder
     }
 
 
-getLessonsOrdered : Index -> List Lesson
+getLessonsOrdered : Index -> List LessonEntry
 getLessonsOrdered lessonIndex =
-    List.filterMap (\id -> Dict.get id lessonIndex.lessons) lessonIndex.lessonOrder
+    List.filterMap (\id -> Dict.get id lessonIndex.lessonEntries) lessonIndex.lessonOrder

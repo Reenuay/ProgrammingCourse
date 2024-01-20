@@ -15,7 +15,7 @@ import Element.Font as Font
 import Element.Lazy exposing (lazy, lazy2)
 import Http exposing (Error(..))
 import Lesson.Core exposing (LessonCompilationOutcome)
-import Lesson.Index.Core exposing (Index, Lesson)
+import Lesson.Index.Core exposing (Index, LessonEntry)
 import Lesson.Index.Decoder
 import Lesson.Parser
 import Lesson.Renderer
