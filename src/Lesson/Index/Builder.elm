@@ -1,10 +1,10 @@
-port module LessonIndex.Builder exposing (main)
+port module Lesson.Index.Builder exposing (main)
 
 import Json.Decode exposing (Error(..))
-import Lesson.AST exposing (Lesson)
+import Lesson.Core exposing (Lesson)
+import Lesson.Index.Core as LessonIndex exposing (Index)
+import Lesson.Index.Encoder
 import Lesson.Parser exposing (lesson)
-import LessonIndex.Core as LessonIndex exposing (LessonIndex)
-import LessonIndex.Encoder
 import Mark exposing (Outcome(..))
 import Mark.Error
 import Platform exposing (worker)
@@ -28,7 +28,7 @@ port sendError : String -> Cmd msg
 
 type alias Model =
     { inputHasEnded : Bool
-    , lessonIndex : LessonIndex
+    , lessonIndex : Index
     }
 
 
@@ -64,10 +64,10 @@ update msg model =
     case msg of
         Input { path, content } ->
             case parseLesson content of
-                Ok { metadata } ->
+                Ok { frontmatter } ->
                     let
                         { title, author } =
-                            metadata
+                            frontmatter
                     in
                     ( { model
                         | lessonIndex =
@@ -86,7 +86,7 @@ update msg model =
                     ( model, sendError <| String.join "\n" errors )
 
         EndOfInput ->
-            ( { model | inputHasEnded = True }, sendResult <| LessonIndex.Encoder.toJson model.lessonIndex )
+            ( { model | inputHasEnded = True }, sendResult <| Lesson.Index.Encoder.toJson model.lessonIndex )
 
 
 subscriptions : a -> Sub Msg

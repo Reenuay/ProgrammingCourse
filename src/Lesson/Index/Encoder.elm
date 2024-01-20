@@ -1,7 +1,7 @@
-module LessonIndex.Encoder exposing (toJson)
+module Lesson.Index.Encoder exposing (toJson)
 
 import Json.Encode as Encode exposing (Value)
-import LessonIndex.Core exposing (Lesson, LessonIndex)
+import Lesson.Index.Core exposing (Index, Lesson)
 
 
 lessonEncoder : Lesson -> Value
@@ -14,7 +14,7 @@ lessonEncoder lesson =
         ]
 
 
-lessonIndexEncoder : LessonIndex -> Value
+lessonIndexEncoder : Index -> Value
 lessonIndexEncoder lessonIndex =
     Encode.object
         [ ( "lessons", Encode.dict identity lessonEncoder lessonIndex.lessons )
@@ -22,6 +22,6 @@ lessonIndexEncoder lessonIndex =
         ]
 
 
-toJson : LessonIndex -> String
+toJson : Index -> String
 toJson lessonIndex =
     Encode.encode 0 (lessonIndexEncoder lessonIndex)

@@ -1,10 +1,10 @@
-module Lesson.AST exposing (Block(..), Lesson, LessonCompilationOutcome, Metadata, StyledText, Styles)
+module Lesson.Core exposing (Block(..), Frontmatter, Lesson, LessonCompilationOutcome, StyledText, Styles)
 
 import Mark exposing (Outcome, Partial)
 import Mark.Error exposing (Error)
 
 
-type alias Metadata =
+type alias Frontmatter =
     { title : String, author : String }
 
 
@@ -21,7 +21,7 @@ type Block
 
 
 type alias Lesson =
-    { metadata : Metadata, body : List Block }
+    { frontmatter : Frontmatter, body : List Block }
 
 
 type alias LessonCompilationOutcome =

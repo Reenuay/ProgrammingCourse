@@ -1,7 +1,7 @@
 {
     "description": "Programming Course",
     "scripts": {
-        "build-lesson-index": "elm make src/LessonIndex/Builder.elm --output=lessonIndexBuilder.js --optimize && node buildLessonIndex.js",
+        "build-lesson-index": "elm make src/Lesson/Index/Builder.elm --output=lessonIndexBuilder.js --optimize && node buildLessonIndex.js",
         "build": "npm run build-lesson-index && elm make src/Main.elm --output=public/main.js --optimize",
         "debug": "npm run build-lesson-index && elm-live src/Main.elm --open --hot --dir=public -- --output=public/main.js"
     },

@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { Elm } = require("./lessonIndexBuilder.js");
 
-const app = Elm.LessonIndex.Builder.init();
+const app = Elm.Lesson.Index.Builder.init();
 
 app.ports.sendError.subscribe((error) => {
     console.error(error);

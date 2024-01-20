@@ -1,12 +1,12 @@
 module Lesson.Parser exposing (lesson)
 
-import Lesson.AST exposing (Block(..), Lesson, Metadata, StyledText)
+import Lesson.Core exposing (Block(..), Frontmatter, Lesson, StyledText)
 import Mark
 
 
-metadata : Mark.Block Metadata
+metadata : Mark.Block Frontmatter
 metadata =
-    Mark.record "Lesson"
+    Mark.record "Frontmatter"
         (\title author ->
             { title = title
             , author = author
@@ -29,7 +29,7 @@ lesson : Mark.Document Lesson
 lesson =
     Mark.documentWith
         (\meta body ->
-            { metadata = meta
+            { frontmatter = meta
             , body = body
             }
         )

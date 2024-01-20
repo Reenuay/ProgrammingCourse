@@ -14,11 +14,11 @@ import Element.Events exposing (onClick)
 import Element.Font as Font
 import Element.Lazy exposing (lazy, lazy2)
 import Http exposing (Error(..))
-import Lesson.AST exposing (LessonCompilationOutcome)
+import Lesson.Core exposing (LessonCompilationOutcome)
+import Lesson.Index.Core exposing (Index, Lesson)
+import Lesson.Index.Decoder
 import Lesson.Parser
 import Lesson.Renderer
-import LessonIndex.Core as LessonIndex exposing (Lesson, LessonIndex)
-import LessonIndex.Decoder
 import Mark
 import Material.Icons.Outlined
 import Material.Icons.Types exposing (Coloring(..))
@@ -37,7 +37,7 @@ type alias WindowSize =
 
 
 type alias Model =
-    { lessonIndex : WebData LessonIndex
+    { lessonIndex : WebData Index
     , openLesson : Timeline (WebData LessonCompilationOutcome)
     , windowSize : WindowSize
     , themeName : Timeline ThemeName
@@ -45,7 +45,7 @@ type alias Model =
 
 
 type Msg
-    = LessonIndexReceived (WebData LessonIndex)
+    = LessonIndexReceived (WebData Index)
     | LessonReceived (WebData LessonCompilationOutcome)
     | FrameReceived Time.Posix
     | WindowResized Int Int
@@ -76,7 +76,7 @@ init windowSize =
         { url = "lessonIndex.json"
         , expect =
             Http.expectJson (RemoteData.fromResult >> LessonIndexReceived)
-                LessonIndex.Decoder.lessonIndexDecoder
+                Lesson.Index.Decoder.lessonIndexDecoder
         }
     )
 
@@ -284,7 +284,7 @@ lesssonContainerView theme lesson =
         ]
 
 
-bodyView : Theme -> WebData LessonIndex -> Timeline (WebData LessonCompilationOutcome) -> Element Msg
+bodyView : Theme -> WebData Index -> Timeline (WebData LessonCompilationOutcome) -> Element Msg
 bodyView theme lessonIndex lesson =
     let
         config =
@@ -309,7 +309,7 @@ bodyView theme lessonIndex lesson =
         RemoteData.Success index ->
             let
                 lessons =
-                    LessonIndex.getLessonsOrdered index
+                    Lesson.Index.Core.getLessonsOrdered index
             in
             row
                 [ width fill

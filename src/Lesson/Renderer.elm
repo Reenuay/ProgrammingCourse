@@ -3,7 +3,7 @@ module Lesson.Renderer exposing (render, renderErrors, renderOutcome)
 import Common.Util exposing (allSidesZero)
 import Element exposing (Element, el, fill, height, none, paddingEach, paragraph, px, spacing, text, textColumn, width)
 import Element.Font as Font
-import Lesson.AST exposing (Block(..), Lesson, LessonCompilationOutcome, StyledText)
+import Lesson.Core exposing (Block(..), Lesson, LessonCompilationOutcome, StyledText)
 import Mark exposing (Outcome(..))
 import Mark.Error as Error exposing (Error)
 import Resources.FontSize exposing (headingFontSize)
@@ -45,7 +45,7 @@ render lesson =
                 , paddingEach { allSidesZero | bottom = 30 }
                 , Font.semiBold
                 ]
-                (text lesson.metadata.title)
+                (text lesson.frontmatter.title)
             ]
 
         footer =
