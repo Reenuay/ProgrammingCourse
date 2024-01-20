@@ -163,40 +163,6 @@ headerView theme themeName =
         ]
 
 
-lessonListView : Theme -> List Lesson -> Element Msg
-lessonListView =
-    lazy2
-        (\theme lessons ->
-            column
-                [ width fill
-                , height fill
-                , Background.color theme.panelColor
-                , Border.color theme.borderColor
-                , Border.widthEach { allSidesZero | right = 1 }
-                , paddingXY 10 10
-                , spacing 10
-                ]
-                (List.map
-                    (\lesson ->
-                        el
-                            [ Font.size smallFontSize
-                            , width fill
-                            , height shrink
-                            , Border.color theme.borderColor
-                            , Border.width 1
-                            , paddingXY 20 10
-                            , Border.rounded 5
-                            , pointer
-                            , mouseOver [ Background.color theme.panelHighlightColor ]
-                            , onClick (LoadLesson lesson.title)
-                            ]
-                            (text lesson.title)
-                    )
-                    lessons
-                )
-        )
-
-
 lessonView : LessonCompilationOutcome -> Element msg
 lessonView =
     lazy Lesson.Renderer.renderOutcome
@@ -306,18 +272,13 @@ bodyView theme lessonIndex lesson =
         RemoteData.Loading ->
             loader
 
-        RemoteData.Success index ->
-            let
-                lessons =
-                    Lesson.Index.Core.getLessonsOrdered index
-            in
+        RemoteData.Success _ ->
             row
                 [ width fill
                 , height fill
                 , clipY
                 ]
-                [ lessonListView theme lessons
-                , lesssonContainerView theme lesson
+                [ lesssonContainerView theme lesson
                 ]
 
         RemoteData.Failure _ ->
