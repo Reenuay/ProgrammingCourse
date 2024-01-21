@@ -106,13 +106,13 @@ update msg model =
             , Cmd.none
             )
 
-        LoadLesson title ->
+        LoadLesson fileName ->
             ( { model
                 | openLesson =
                     Animator.go Animator.immediately RemoteData.Loading model.openLesson
               }
             , Http.get
-                { url = "lessons/" ++ title ++ ".emu"
+                { url = "lessons/" ++ fileName ++ ".emu"
                 , expect =
                     Http.expectString
                         (RemoteData.fromResult
