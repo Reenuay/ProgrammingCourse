@@ -7,15 +7,14 @@ import Common.Color
 import Common.Util exposing (allSidesZero)
 import Components.Loader as Loader
 import Components.ThemeToggle as ThemeSwitch
-import Element exposing (Element, alignRight, centerX, centerY, clipY, column, el, fill, fillPortion, focusStyle, fromRgb, height, html, layoutWith, mouseOver, none, padding, paddingXY, pointer, row, scrollbarY, shrink, spacing, text, toRgb, width)
+import Element exposing (Element, alignRight, centerX, centerY, clipY, column, el, fill, fillPortion, focusStyle, fromRgb, height, html, layoutWith, none, padding, paddingXY, row, scrollbarY, spacing, text, toRgb, width)
 import Element.Background as Background
 import Element.Border as Border
-import Element.Events exposing (onClick)
 import Element.Font as Font
 import Element.Lazy exposing (lazy, lazy2)
 import Http exposing (Error(..))
 import Lesson.Core exposing (LessonCompilationOutcome)
-import Lesson.Index.Core exposing (Index, LessonEntry)
+import Lesson.Index.Core exposing (Index)
 import Lesson.Index.Decoder
 import Lesson.Parser
 import Lesson.Renderer
@@ -24,7 +23,7 @@ import Material.Icons.Outlined
 import Material.Icons.Types exposing (Coloring(..))
 import Platform.Cmd as Cmd
 import RemoteData exposing (WebData)
-import Resources.FontSize exposing (baseFont, bodyFontSize, giantFontSize, smallFontSize, subheadingFontSize)
+import Resources.FontSize exposing (baseFont, bodyFontSize, giantFontSize, subheadingFontSize)
 import Resources.Style as Style
 import Resources.Theme exposing (Theme, ThemeName(..), getTheme, toggleTheme)
 import Time
