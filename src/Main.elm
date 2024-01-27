@@ -13,7 +13,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Lazy exposing (lazy, lazy2)
 import Http exposing (Error(..))
-import Lesson.Core exposing (LessonCompilationOutcome)
+import Lesson.Core exposing (Lesson, LessonCompilationOutcome)
 import Lesson.Index.Core exposing (Index)
 import Lesson.Index.Decoder
 import Lesson.Parser
@@ -37,7 +37,7 @@ type alias WindowSize =
 
 type alias Model =
     { lessonIndex : WebData Index
-    , openLesson : Timeline (WebData LessonCompilationOutcome)
+    , openLesson : Timeline (WebData (Maybe Lesson))
     , windowSize : WindowSize
     , themeName : Timeline ThemeName
     }
@@ -88,10 +88,26 @@ update msg model =
             , Cmd.none
             )
 
-        LessonReceived source ->
+        LessonReceived compiledLesson ->
+            let
+                openLesson =
+                    compiledLesson
+                        |> RemoteData.map
+                            (\outcome ->
+                                case outcome of
+                                    Mark.Success lesson ->
+                                        Just lesson
+
+                                    Mark.Almost { result } ->
+                                        Just result
+
+                                    Mark.Failure _ ->
+                                        Nothing
+                            )
+            in
             ( { model
                 | openLesson =
-                    Animator.go Animator.immediately source model.openLesson
+                    Animator.go Animator.immediately openLesson model.openLesson
               }
             , Cmd.none
             )
@@ -162,20 +178,20 @@ headerView theme themeName =
         ]
 
 
-lessonView : LessonCompilationOutcome -> Element msg
+lessonView : Lesson -> Element msg
 lessonView =
-    lazy Lesson.Renderer.renderOutcome
+    lazy Lesson.Renderer.render
 
 
-lessonLoaderView : Theme -> Timeline (WebData LessonCompilationOutcome) -> Element msg
+lessonLoaderView : Theme -> Timeline (WebData (Maybe Lesson)) -> Element msg
 lessonLoaderView =
     let
         config =
             Loader.defaultConfig
     in
     lazy2
-        (\theme lesson ->
-            case Animator.current lesson of
+        (\theme lessonTimeline ->
+            case Animator.current lessonTimeline of
                 RemoteData.NotAsked ->
                     el
                         [ Font.size subheadingFontSize
@@ -191,7 +207,7 @@ lessonLoaderView =
                             { config
                                 | color = theme.panelColor
                             }
-                            lesson
+                            lessonTimeline
                         )
 
                 RemoteData.Failure (BadStatus 404) ->
@@ -219,13 +235,22 @@ lessonLoaderView =
                         ]
                         (text "Error loading lesson")
 
-                RemoteData.Success compilationOutcome ->
-                    lessonView compilationOutcome
+                RemoteData.Success (Just lesson) ->
+                    lessonView lesson
+
+                RemoteData.Success Nothing ->
+                    el
+                        [ Font.size subheadingFontSize
+                        , centerX
+                        , centerY
+                        , Style.style [ Style.unselectable ]
+                        ]
+                        (text "Lesson file is corrupted")
         )
 
 
-lesssonContainerView : Theme -> Timeline (WebData LessonCompilationOutcome) -> Element msg
-lesssonContainerView theme lesson =
+lesssonContainerView : Theme -> Timeline (WebData (Maybe Lesson)) -> Element msg
+lesssonContainerView theme lessonTimeline =
     row
         [ width (fillPortion 6)
         , height fill
@@ -243,14 +268,14 @@ lesssonContainerView theme lesson =
                 , height fill
                 , spacing 20
                 ]
-                (lessonLoaderView theme lesson)
+                (lessonLoaderView theme lessonTimeline)
             , el [ width (fillPortion 2) ] none
             ]
         ]
 
 
-bodyView : Theme -> WebData Index -> Timeline (WebData LessonCompilationOutcome) -> Element Msg
-bodyView theme lessonIndex lesson =
+bodyView : Theme -> WebData Index -> Timeline (WebData (Maybe Lesson)) -> Element Msg
+bodyView theme lessonIndex lessonTimeline =
     let
         config =
             Loader.defaultConfig
@@ -261,7 +286,7 @@ bodyView theme lessonIndex lesson =
                     { config
                         | color = theme.panelColor
                     }
-                    lesson
+                    lessonTimeline
                 )
     in
     case lessonIndex of
@@ -277,7 +302,7 @@ bodyView theme lessonIndex lesson =
                 , height fill
                 , clipY
                 ]
-                [ lesssonContainerView theme lesson
+                [ lesssonContainerView theme lessonTimeline
                 ]
 
         RemoteData.Failure _ ->
