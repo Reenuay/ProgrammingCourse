@@ -32,7 +32,7 @@ type alias Model =
     }
 
 
-type Msg
+type Message
     = Input Content
     | EndOfInput
 
@@ -59,7 +59,7 @@ parseLesson content =
             Err <| List.map Mark.Error.toString errors
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Message -> Model -> ( Model, Cmd Message )
 update msg model =
     case msg of
         Input { path, content } ->
@@ -89,7 +89,7 @@ update msg model =
             ( { model | inputHasEnded = True }, sendResult <| Lesson.Index.Encoder.toJson model.lessonIndex )
 
 
-subscriptions : a -> Sub Msg
+subscriptions : a -> Sub Message
 subscriptions _ =
     Sub.batch
         [ receiveInput Input
@@ -97,7 +97,7 @@ subscriptions _ =
         ]
 
 
-main : Program () Model Msg
+main : Program () Model Message
 main =
     worker
         { init = init
