@@ -11,7 +11,7 @@ import Element exposing (Element, alignRight, centerX, centerY, clipY, column, e
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
-import Element.Lazy exposing (lazy, lazy2)
+import Element.Lazy exposing (lazy)
 import Html
 import Http exposing (Error(..))
 import Lesson.Core exposing (Lesson, LessonCompilationOutcome)
@@ -38,9 +38,10 @@ type alias WindowSize =
 
 type alias Model =
     { lessonIndex : WebData LessonIndex
-    , openLesson : Timeline (WebData (Maybe Lesson))
+    , openLesson : WebData (Maybe Lesson)
     , windowSize : WindowSize
     , theme : Timeline Theme
+    , loaderTimeline : Timeline ()
     }
 
 
@@ -68,21 +69,21 @@ type Message
 animator : Animator Model
 animator =
     Animator.animator
-        |> Animator.watchingWith
-            .openLesson
-            (\newTimeline model -> { model | openLesson = newTimeline })
-            (\lesson -> RemoteData.isLoading lesson)
         |> Animator.watching
             .theme
-            (\newTimeline model -> { model | theme = newTimeline })
+            (\newTheme model -> { model | theme = newTheme })
+        |> Animator.watching
+            .loaderTimeline
+            (\newTimeline model -> { model | loaderTimeline = newTimeline })
 
 
 initialize : WindowSize -> ( Model, Cmd Event )
 initialize windowSize =
     ( { lessonIndex = RemoteData.Loading
-      , openLesson = Animator.init RemoteData.NotAsked
+      , openLesson = RemoteData.NotAsked
       , windowSize = windowSize
       , theme = Animator.init Dark
+      , loaderTimeline = Animator.init ()
       }
     , Http.get
         { url = "lessonIndex.json"
@@ -97,10 +98,7 @@ handleCommand : Command -> Model -> ( Model, Cmd Event )
 handleCommand command model =
     case command of
         LoadLesson fileName ->
-            ( { model
-                | openLesson =
-                    Animator.go Animator.immediately RemoteData.Loading model.openLesson
-              }
+            ( { model | openLesson = RemoteData.Loading }
             , Http.get
                 { url = "lessons/" ++ fileName ++ ".emu"
                 , expect =
@@ -158,10 +156,7 @@ handleEvent event model =
                                         Nothing
                             )
             in
-            { model
-                | openLesson =
-                    Animator.go Animator.immediately openLesson model.openLesson
-            }
+            { model | openLesson = openLesson }
 
         SubscriptionEventReceived ev ->
             handleSubscriptionEvent ev model
@@ -193,65 +188,62 @@ renderHeader colorScheme theme =
         ]
 
 
-renderLesson : ColorScheme -> Timeline (WebData (Maybe Lesson)) -> Element msg
-renderLesson =
-    lazy2
-        (\theme lessonTimeline ->
-            case Animator.current lessonTimeline of
-                RemoteData.NotAsked ->
-                    el
-                        [ Font.size subheadingFontSize
-                        , centerX
-                        , centerY
-                        , Style.style [ Style.unselectable ]
-                        ]
-                        (text "No lesson is opened")
+renderLesson : ColorScheme -> WebData (Maybe Lesson) -> Timeline () -> Element msg
+renderLesson colorScheme openLesson loaderTimeline =
+    case openLesson of
+        RemoteData.NotAsked ->
+            el
+                [ Font.size subheadingFontSize
+                , centerX
+                , centerY
+                , Style.style [ Style.unselectable ]
+                ]
+                (text "No lesson is opened")
 
-                RemoteData.Loading ->
-                    el [ centerX, centerY ]
-                        (Loader.render 80 theme.panelColor lessonTimeline)
+        RemoteData.Loading ->
+            el [ centerX, centerY ]
+                (Loader.render 80 colorScheme.panelColor loaderTimeline)
 
-                RemoteData.Failure (BadStatus 404) ->
-                    column [ centerX, centerY, spacing 40 ]
-                        [ el
-                            [ Font.size giantFontSize
-                            , centerX
-                            , Style.style [ Style.unselectable ]
-                            ]
-                            (text "¯\\_(ツ)_/¯")
-                        , el
-                            [ Font.size subheadingFontSize
-                            , centerX
-                            , Style.style [ Style.unselectable ]
-                            ]
-                            (text "Lesson not found")
-                        ]
+        RemoteData.Failure (BadStatus 404) ->
+            column [ centerX, centerY, spacing 40 ]
+                [ el
+                    [ Font.size giantFontSize
+                    , centerX
+                    , Style.style [ Style.unselectable ]
+                    ]
+                    (text "¯\\_(ツ)_/¯")
+                , el
+                    [ Font.size subheadingFontSize
+                    , centerX
+                    , Style.style [ Style.unselectable ]
+                    ]
+                    (text "Lesson not found")
+                ]
 
-                RemoteData.Failure _ ->
-                    el
-                        [ Font.size subheadingFontSize
-                        , centerX
-                        , centerY
-                        , Style.style [ Style.unselectable ]
-                        ]
-                        (text "Error loading lesson")
+        RemoteData.Failure _ ->
+            el
+                [ Font.size subheadingFontSize
+                , centerX
+                , centerY
+                , Style.style [ Style.unselectable ]
+                ]
+                (text "Error loading lesson")
 
-                RemoteData.Success (Just lesson) ->
-                    lazy Lesson.Renderer.render lesson
+        RemoteData.Success (Just lesson) ->
+            lazy Lesson.Renderer.render lesson
 
-                RemoteData.Success Nothing ->
-                    el
-                        [ Font.size subheadingFontSize
-                        , centerX
-                        , centerY
-                        , Style.style [ Style.unselectable ]
-                        ]
-                        (text "Lesson file is corrupted")
-        )
+        RemoteData.Success Nothing ->
+            el
+                [ Font.size subheadingFontSize
+                , centerX
+                , centerY
+                , Style.style [ Style.unselectable ]
+                ]
+                (text "Lesson file is corrupted")
 
 
-renderLessonContainer : ColorScheme -> Timeline (WebData (Maybe Lesson)) -> Element msg
-renderLessonContainer theme lessonTimeline =
+renderLessonContainer : ColorScheme -> WebData (Maybe Lesson) -> Timeline () -> Element msg
+renderLessonContainer theme openLesson loaderTimeline =
     row
         [ width (fillPortion 6)
         , height fill
@@ -269,18 +261,18 @@ renderLessonContainer theme lessonTimeline =
                 , height fill
                 , spacing 20
                 ]
-                (renderLesson theme lessonTimeline)
+                (renderLesson theme openLesson loaderTimeline)
             , el [ width (fillPortion 2) ] none
             ]
         ]
 
 
-renderBody : ColorScheme -> WebData LessonIndex -> Timeline (WebData (Maybe Lesson)) -> Element msg
-renderBody theme lessonIndex lessonTimeline =
+renderBody : ColorScheme -> WebData LessonIndex -> WebData (Maybe Lesson) -> Timeline () -> Element msg
+renderBody colorScheme lessonIndex openLesson loaderTimeline =
     let
         loader =
             el [ centerX, centerY ]
-                (Loader.render 80 theme.panelColor lessonTimeline)
+                (Loader.render 80 colorScheme.panelColor loaderTimeline)
     in
     case lessonIndex of
         RemoteData.NotAsked ->
@@ -295,13 +287,13 @@ renderBody theme lessonIndex lessonTimeline =
                 , height fill
                 , clipY
                 ]
-                [ renderLessonContainer theme lessonTimeline
+                [ renderLessonContainer colorScheme openLesson loaderTimeline
                 ]
 
         RemoteData.Failure _ ->
             column [ centerX, centerY, spacing 20 ]
                 [ el [ centerX ]
-                    (Material.Icons.Outlined.warning_amber 100 (Color (Common.Color.fromElementColor theme.textColor)) |> html)
+                    (Material.Icons.Outlined.warning_amber 100 (Color (Common.Color.fromElementColor colorScheme.textColor)) |> html)
                 , el
                     [ Font.size subheadingFontSize
                     , centerX
@@ -314,11 +306,11 @@ renderBody theme lessonIndex lessonTimeline =
 renderDocument : Model -> Document Command
 renderDocument model =
     let
-        theme =
+        colorScheme =
             Theme.getCurrentColorScheme model.theme
 
         accentColorDeconstructed =
-            toRgb theme.accentColor
+            toRgb colorScheme.accentColor
 
         textSelectionColor =
             { accentColorDeconstructed | alpha = 0.2 }
@@ -335,12 +327,12 @@ renderDocument model =
                     }
                 ]
             }
-            [ Background.color theme.backgroundColor
+            [ Background.color colorScheme.backgroundColor
             , Font.size bodyFontSize
             , Font.family baseFont
-            , Font.color theme.textColor
+            , Font.color colorScheme.textColor
             , Style.style
-                [ Style.scrollbarThumbColor theme.borderColor
+                [ Style.scrollbarThumbColor colorScheme.borderColor
                 , Style.textSelectionColor textSelectionColor
                 ]
             ]
@@ -348,8 +340,8 @@ renderDocument model =
                 [ width fill
                 , height fill
                 ]
-                [ renderHeader theme model.theme
-                , renderBody theme model.lessonIndex model.openLesson
+                [ renderHeader colorScheme model.theme
+                , renderBody colorScheme model.lessonIndex model.openLesson model.loaderTimeline
                 ]
             )
         ]
