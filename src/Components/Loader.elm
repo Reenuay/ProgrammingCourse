@@ -1,7 +1,7 @@
 module Components.Loader exposing (render)
 
 import Animator exposing (Timeline)
-import Element exposing (Color, Element, alignBottom, el, fill, height, none, padding, px, rgb255, row, spacing, width)
+import Element exposing (Color, Element, alignBottom, el, fill, height, none, padding, px, row, spacing, width)
 import Element.Background as Background
 import Element.Border as Border
 
