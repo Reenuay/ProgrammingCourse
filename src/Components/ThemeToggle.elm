@@ -1,37 +1,22 @@
-module Components.ThemeToggle exposing (Config, defaultConfig, toggle)
+module Components.ThemeToggle exposing (render)
 
 import Animator exposing (Timeline)
 import Common.Color
 import Common.Math exposing (lerp)
-import Element exposing (Color, Element, centerX, centerY, el, height, html, none, padding, pointer, px, rgb255, row, width)
+import Element exposing (Color, Element, centerX, centerY, el, height, html, none, padding, pointer, px, row, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events exposing (onClick)
 import Material.Icons
 import Material.Icons.Types exposing (Coloring(..))
-import Resources.Theme exposing (ThemeName(..))
+import Resources.Theme exposing (Theme(..))
 
 
-type alias Config =
-    { trackWidth : Int
-    , trackColor : Color
-    , thumbColor : Color
-    }
-
-
-defaultConfig : Config
-defaultConfig =
-    { trackWidth = 50
-    , trackColor = rgb255 0 0 0
-    , thumbColor = rgb255 255 255 255
-    }
-
-
-toggle : Config -> Timeline ThemeName -> msg -> Element msg
-toggle config timeline switchMsg =
+render : Int -> Color -> Color -> msg -> Timeline Theme -> Element msg
+render trackWidth trackColor thumbColor onToggle theme =
     let
         animationPosition =
-            Animator.linear timeline <|
+            Animator.linear theme <|
                 \themeName ->
                     case themeName of
                         Dark ->
@@ -41,16 +26,16 @@ toggle config timeline switchMsg =
                             Animator.at 1
 
         paddingValue =
-            config.trackWidth // 16
+            trackWidth // 16
 
         trackHeight =
-            config.trackWidth // 2
+            trackWidth // 2
 
         thumbSize =
             trackHeight - paddingValue * 2
 
         maxThumbOffset =
-            config.trackWidth - thumbSize - paddingValue * 2
+            trackWidth - thumbSize - paddingValue * 2
 
         thumbOffset =
             round (animationPosition * toFloat maxThumbOffset)
@@ -69,12 +54,12 @@ toggle config timeline switchMsg =
             round (abs iconAnimationPosition * toFloat thumbSize * iconRelativeSize)
     in
     row
-        [ Background.color config.trackColor
-        , width (px config.trackWidth)
+        [ Background.color trackColor
+        , width (px trackWidth)
         , height (px trackHeight)
         , Border.rounded trackHeight
         , padding paddingValue
-        , onClick switchMsg
+        , onClick onToggle
         , pointer
         ]
         [ el [ width (px thumbOffset) ] none
@@ -82,7 +67,7 @@ toggle config timeline switchMsg =
             [ width (px thumbSize)
             , height (px thumbSize)
             , Border.rounded thumbSize
-            , Background.color config.thumbColor
+            , Background.color thumbColor
             ]
             (el
                 [ width (px iconSize)
@@ -90,6 +75,6 @@ toggle config timeline switchMsg =
                 , centerX
                 , centerY
                 ]
-                (icon iconSize (Color (Common.Color.fromElementColor config.trackColor)) |> html)
+                (icon iconSize (Color (Common.Color.fromElementColor trackColor)) |> html)
             )
         ]

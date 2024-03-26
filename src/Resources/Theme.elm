@@ -1,14 +1,16 @@
-module Resources.Theme exposing (Theme, ThemeName(..), getTheme, toggleTheme)
+module Resources.Theme exposing (ColorScheme, Theme(..), getCurrentColorScheme, toggle)
 
+import Animator exposing (Timeline)
+import Common.Color
 import Element exposing (Color, rgb255)
 
 
-type ThemeName
+type Theme
     = Light
     | Dark
 
 
-type alias Theme =
+type alias ColorScheme =
     { backgroundColor : Color
     , panelColor : Color
     , panelHighlightColor : Color
@@ -18,8 +20,18 @@ type alias Theme =
     }
 
 
-getTheme : ThemeName -> Theme
-getTheme theme =
+toggle : Theme -> Theme
+toggle theme =
+    case theme of
+        Light ->
+            Dark
+
+        Dark ->
+            Light
+
+
+getColorScheme : Theme -> ColorScheme
+getColorScheme theme =
     case theme of
         Light ->
             { backgroundColor = rgb255 232 230 236
@@ -40,11 +52,41 @@ getTheme theme =
             }
 
 
-toggleTheme : ThemeName -> ThemeName
-toggleTheme theme =
-    case theme of
-        Light ->
-            Dark
+getCurrentColorScheme : Timeline Theme -> ColorScheme
+getCurrentColorScheme themeName =
+    let
+        inTransition =
+            Animator.current themeName /= Animator.arrived themeName
+    in
+    if inTransition then
+        let
+            darkTheme =
+                getColorScheme Dark
 
-        Dark ->
-            Light
+            lightTheme =
+                getColorScheme Light
+
+            mergeColor mapper builder =
+                (Animator.color themeName <|
+                    \name ->
+                        case name of
+                            Light ->
+                                mapper lightTheme |> Common.Color.fromElementColor
+
+                            Dark ->
+                                mapper darkTheme |> Common.Color.fromElementColor
+                )
+                    |> Common.Color.toElementColor
+                    |> builder
+        in
+        ColorScheme
+            |> mergeColor .backgroundColor
+            |> mergeColor .panelColor
+            |> mergeColor .panelHighlightColor
+            |> mergeColor .borderColor
+            |> mergeColor .textColor
+            |> mergeColor .accentColor
+
+    else
+        Animator.current themeName
+            |> getColorScheme

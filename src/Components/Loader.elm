@@ -1,4 +1,4 @@
-module Components.Loader exposing (..)
+module Components.Loader exposing (render)
 
 import Animator exposing (Timeline)
 import Element exposing (Color, Element, alignBottom, el, fill, height, none, padding, px, rgb255, row, spacing, width)
@@ -6,21 +6,8 @@ import Element.Background as Background
 import Element.Border as Border
 
 
-type alias Config =
-    { size : Int
-    , color : Color
-    }
-
-
-defaultConfig : Config
-defaultConfig =
-    { size = 80
-    , color = rgb255 0 0 0
-    }
-
-
-bars : Config -> Timeline a -> Element msg
-bars config timeline =
+render : Int -> Color -> Timeline a -> Element msg
+render size color timeline =
     let
         paddingValue =
             5
@@ -29,7 +16,7 @@ bars config timeline =
             3
 
         maxBarHeight =
-            config.size - paddingValue * 2
+            size - paddingValue * 2
 
         animateHeight i =
             (Animator.move timeline <|
@@ -45,15 +32,15 @@ bars config timeline =
             el
                 [ width fill
                 , height (px (animateHeight i))
-                , Background.color config.color
+                , Background.color color
                 , Border.rounded 5
                 , alignBottom
                 ]
                 none
     in
     row
-        [ width (px config.size)
-        , height (px config.size)
+        [ width (px size)
+        , height (px size)
         , padding paddingValue
         , spacing 5
         ]

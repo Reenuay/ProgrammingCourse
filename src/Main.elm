@@ -6,12 +6,13 @@ import Browser.Events
 import Common.Color
 import Common.Util exposing (allSidesZero)
 import Components.Loader as Loader
-import Components.ThemeToggle as ThemeSwitch
+import Components.ThemeToggle as ThemeToggle
 import Element exposing (Element, alignRight, centerX, centerY, clipY, column, el, fill, fillPortion, focusStyle, fromRgb, height, html, layoutWith, none, padding, paddingXY, row, scrollbarY, spacing, text, toRgb, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Lazy exposing (lazy, lazy2)
+import Html
 import Http exposing (Error(..))
 import Lesson.Core exposing (Lesson, LessonCompilationOutcome)
 import Lesson.Index.Core exposing (Index)
@@ -25,7 +26,7 @@ import Platform.Cmd as Cmd
 import RemoteData exposing (WebData)
 import Resources.FontSize exposing (baseFont, bodyFontSize, giantFontSize, subheadingFontSize)
 import Resources.Style as Style
-import Resources.Theme exposing (Theme, ThemeName(..), getTheme, toggleTheme)
+import Resources.Theme as Theme exposing (ColorScheme, Theme(..))
 import Time
 
 
@@ -39,17 +40,29 @@ type alias Model =
     { lessonIndex : WebData Index
     , openLesson : Timeline (WebData (Maybe Lesson))
     , windowSize : WindowSize
-    , themeName : Timeline ThemeName
+    , theme : Timeline Theme
     }
 
 
-type Msg
+type Command
+    = LoadLesson String
+    | ToggleTheme
+
+
+type SubscriptionEvent
+    = FrameReceived Time.Posix
+    | WindowResized Int Int
+
+
+type Event
     = LessonIndexReceived (WebData Index)
     | LessonReceived (WebData LessonCompilationOutcome)
-    | FrameReceived Time.Posix
-    | WindowResized Int Int
-    | LoadLesson String
-    | ToggleTheme
+    | SubscriptionEventReceived SubscriptionEvent
+
+
+type Message
+    = Command Command
+    | Event Event
 
 
 animator : Animator Model
@@ -60,68 +73,29 @@ animator =
             (\newTimeline model -> { model | openLesson = newTimeline })
             (\lesson -> RemoteData.isLoading lesson)
         |> Animator.watching
-            .themeName
-            (\newTimeline model -> { model | themeName = newTimeline })
+            .theme
+            (\newTimeline model -> { model | theme = newTimeline })
 
 
-init : WindowSize -> ( Model, Cmd Msg )
-init windowSize =
+initialize : WindowSize -> ( Model, Cmd Event )
+initialize windowSize =
     ( { lessonIndex = RemoteData.Loading
       , openLesson = Animator.init RemoteData.NotAsked
       , windowSize = windowSize
-      , themeName = Animator.init Dark
+      , theme = Animator.init Dark
       }
     , Http.get
         { url = "lessonIndex.json"
         , expect =
-            Http.expectJson (RemoteData.fromResult >> LessonIndexReceived)
-                Lesson.Index.Decoder.lessonIndexDecoder
+            Lesson.Index.Decoder.lessonIndexDecoder
+                |> Http.expectJson (RemoteData.fromResult >> LessonIndexReceived)
         }
     )
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        LessonIndexReceived source ->
-            ( { model | lessonIndex = source }
-            , Cmd.none
-            )
-
-        LessonReceived compiledLesson ->
-            let
-                openLesson =
-                    compiledLesson
-                        |> RemoteData.map
-                            (\outcome ->
-                                case outcome of
-                                    Mark.Success lesson ->
-                                        Just lesson
-
-                                    Mark.Almost { result } ->
-                                        Just result
-
-                                    Mark.Failure _ ->
-                                        Nothing
-                            )
-            in
-            ( { model
-                | openLesson =
-                    Animator.go Animator.immediately openLesson model.openLesson
-              }
-            , Cmd.none
-            )
-
-        FrameReceived time ->
-            ( Animator.update time animator model
-            , Cmd.none
-            )
-
-        WindowResized width height ->
-            ( { model | windowSize = { width = width, height = height } }
-            , Cmd.none
-            )
-
+handleCommand : Command -> Model -> ( Model, Cmd Event )
+handleCommand command model =
+    case command of
         LoadLesson fileName ->
             ( { model
                 | openLesson =
@@ -141,25 +115,73 @@ update msg model =
         ToggleTheme ->
             let
                 currentThemeName =
-                    Animator.current model.themeName
+                    Animator.current model.theme
             in
             ( { model
-                | themeName =
-                    Animator.go Animator.quickly (toggleTheme currentThemeName) model.themeName
+                | theme =
+                    Animator.go Animator.quickly (Theme.toggle currentThemeName) model.theme
               }
             , Cmd.none
             )
 
 
-headerView : Theme -> Timeline ThemeName -> Element Msg
-headerView theme themeName =
-    let
-        config =
-            ThemeSwitch.defaultConfig
-    in
+handleSubscriptionEvent : SubscriptionEvent -> Model -> Model
+handleSubscriptionEvent event model =
+    case event of
+        FrameReceived time ->
+            Animator.update time animator model
+
+        WindowResized width height ->
+            { model | windowSize = { width = width, height = height } }
+
+
+handleEvent : Event -> Model -> Model
+handleEvent event model =
+    case event of
+        LessonIndexReceived source ->
+            { model | lessonIndex = source }
+
+        LessonReceived compiledLesson ->
+            let
+                openLesson =
+                    compiledLesson
+                        |> RemoteData.map
+                            (\outcome ->
+                                case outcome of
+                                    Mark.Success lesson ->
+                                        Just lesson
+
+                                    Mark.Almost { result } ->
+                                        Just result
+
+                                    Mark.Failure _ ->
+                                        Nothing
+                            )
+            in
+            { model
+                | openLesson =
+                    Animator.go Animator.immediately openLesson model.openLesson
+            }
+
+        SubscriptionEventReceived ev ->
+            handleSubscriptionEvent ev model
+
+
+handleMessage : Message -> Model -> ( Model, Cmd Event )
+handleMessage message model =
+    case message of
+        Command command ->
+            handleCommand command model
+
+        Event event ->
+            ( handleEvent event model, Cmd.none )
+
+
+renderHeader : ColorScheme -> Timeline Theme -> Element Command
+renderHeader colorScheme theme =
     row
         [ width fill
-        , Border.color theme.borderColor
+        , Border.color colorScheme.borderColor
         , Border.widthEach
             { allSidesZero
                 | bottom = 1
@@ -167,28 +189,17 @@ headerView theme themeName =
         , padding 20
         ]
         [ el [ alignRight, centerY ]
-            (ThemeSwitch.toggle
-                { config
-                    | trackColor = theme.panelColor
-                    , thumbColor = theme.textColor
-                }
-                themeName
-                ToggleTheme
-            )
+            (ThemeToggle.render 50 colorScheme.panelColor colorScheme.textColor ToggleTheme theme)
         ]
 
 
-lessonView : Lesson -> Element msg
-lessonView =
+renderLesson : Lesson -> Element msg
+renderLesson =
     lazy Lesson.Renderer.render
 
 
-lessonLoaderView : Theme -> Timeline (WebData (Maybe Lesson)) -> Element msg
-lessonLoaderView =
-    let
-        config =
-            Loader.defaultConfig
-    in
+renderLessonLoader : ColorScheme -> Timeline (WebData (Maybe Lesson)) -> Element msg
+renderLessonLoader =
     lazy2
         (\theme lessonTimeline ->
             case Animator.current lessonTimeline of
@@ -199,16 +210,11 @@ lessonLoaderView =
                         , centerY
                         , Style.style [ Style.unselectable ]
                         ]
-                        (text "No lesson is open")
+                        (text "No lesson is opened")
 
                 RemoteData.Loading ->
                     el [ centerX, centerY ]
-                        (Loader.bars
-                            { config
-                                | color = theme.panelColor
-                            }
-                            lessonTimeline
-                        )
+                        (Loader.render 80 theme.panelColor lessonTimeline)
 
                 RemoteData.Failure (BadStatus 404) ->
                     column [ centerX, centerY, spacing 40 ]
@@ -236,7 +242,7 @@ lessonLoaderView =
                         (text "Error loading lesson")
 
                 RemoteData.Success (Just lesson) ->
-                    lessonView lesson
+                    renderLesson lesson
 
                 RemoteData.Success Nothing ->
                     el
@@ -249,8 +255,8 @@ lessonLoaderView =
         )
 
 
-lesssonContainerView : Theme -> Timeline (WebData (Maybe Lesson)) -> Element msg
-lesssonContainerView theme lessonTimeline =
+renderLessonContainer : ColorScheme -> Timeline (WebData (Maybe Lesson)) -> Element msg
+renderLessonContainer theme lessonTimeline =
     row
         [ width (fillPortion 6)
         , height fill
@@ -268,26 +274,18 @@ lesssonContainerView theme lessonTimeline =
                 , height fill
                 , spacing 20
                 ]
-                (lessonLoaderView theme lessonTimeline)
+                (renderLessonLoader theme lessonTimeline)
             , el [ width (fillPortion 2) ] none
             ]
         ]
 
 
-bodyView : Theme -> WebData Index -> Timeline (WebData (Maybe Lesson)) -> Element Msg
-bodyView theme lessonIndex lessonTimeline =
+renderBody : ColorScheme -> WebData Index -> Timeline (WebData (Maybe Lesson)) -> Element msg
+renderBody theme lessonIndex lessonTimeline =
     let
-        config =
-            Loader.defaultConfig
-
         loader =
             el [ centerX, centerY ]
-                (Loader.bars
-                    { config
-                        | color = theme.panelColor
-                    }
-                    lessonTimeline
-                )
+                (Loader.render 80 theme.panelColor lessonTimeline)
     in
     case lessonIndex of
         RemoteData.NotAsked ->
@@ -302,7 +300,7 @@ bodyView theme lessonIndex lessonTimeline =
                 , height fill
                 , clipY
                 ]
-                [ lesssonContainerView theme lessonTimeline
+                [ renderLessonContainer theme lessonTimeline
                 ]
 
         RemoteData.Failure _ ->
@@ -318,51 +316,11 @@ bodyView theme lessonIndex lessonTimeline =
                 ]
 
 
-mergeThemes : Timeline ThemeName -> Theme
-mergeThemes themeName =
-    let
-        inTransition =
-            Animator.current themeName /= Animator.arrived themeName
-    in
-    if inTransition then
-        let
-            darkTheme =
-                getTheme Dark
-
-            lightTheme =
-                getTheme Light
-
-            mergeColor mapper builder =
-                (Animator.color themeName <|
-                    \name ->
-                        case name of
-                            Light ->
-                                mapper lightTheme |> Common.Color.fromElementColor
-
-                            Dark ->
-                                mapper darkTheme |> Common.Color.fromElementColor
-                )
-                    |> Common.Color.toElementColor
-                    |> builder
-        in
-        Theme
-            |> mergeColor .backgroundColor
-            |> mergeColor .panelColor
-            |> mergeColor .panelHighlightColor
-            |> mergeColor .borderColor
-            |> mergeColor .textColor
-            |> mergeColor .accentColor
-
-    else
-        Animator.current themeName
-            |> getTheme
-
-
-view : Model -> Document Msg
-view model =
+renderDocument : Model -> Document Command
+renderDocument model =
     let
         theme =
-            mergeThemes model.themeName
+            Theme.getCurrentColorScheme model.theme
 
         accentColorDeconstructed =
             toRgb theme.accentColor
@@ -395,24 +353,49 @@ view model =
                 [ width fill
                 , height fill
                 ]
-                [ headerView theme model.themeName
-                , bodyView theme model.lessonIndex model.openLesson
+                [ renderHeader theme model.theme
+                , renderBody theme model.lessonIndex model.openLesson
                 ]
             )
         ]
     }
 
 
-subscriptions : Model -> Sub Msg
-subscriptions model =
+subscribe : Model -> Sub SubscriptionEvent
+subscribe model =
     Sub.batch
         [ Animator.toSubscription FrameReceived model animator
         , Browser.Events.onResize WindowResized
         ]
 
 
-main : Program WindowSize Model Msg
+main : Program WindowSize Model Message
 main =
+    let
+        init flags =
+            initialize flags
+                |> Tuple.mapSecond (Cmd.map Event)
+
+        update message model =
+            handleMessage message model
+                |> Tuple.mapSecond (Cmd.map Event)
+
+        view model =
+            let
+                doc =
+                    renderDocument model
+            in
+            { title = doc.title
+            , body =
+                doc.body
+                    |> List.map (Html.map Command)
+            }
+
+        subscriptions model =
+            subscribe model
+                |> Sub.map SubscriptionEventReceived
+                |> Sub.map Event
+    in
     Browser.document
         { init = init
         , view = view
