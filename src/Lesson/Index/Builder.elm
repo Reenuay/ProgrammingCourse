@@ -2,7 +2,7 @@ port module Lesson.Index.Builder exposing (main)
 
 import Json.Decode exposing (Error(..))
 import Lesson.Core exposing (Lesson)
-import Lesson.Index.Core as LessonIndex exposing (Index)
+import Lesson.Index.Core as LessonIndex exposing (LessonIndex)
 import Lesson.Index.Encoder
 import Lesson.Parser exposing (lesson)
 import Mark exposing (Outcome(..))
@@ -28,7 +28,7 @@ port sendError : String -> Cmd msg
 
 type alias Model =
     { inputHasEnded : Bool
-    , lessonIndex : Index
+    , lessonIndex : LessonIndex
     }
 
 

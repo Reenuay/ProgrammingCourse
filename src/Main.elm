@@ -15,7 +15,7 @@ import Element.Lazy exposing (lazy, lazy2)
 import Html
 import Http exposing (Error(..))
 import Lesson.Core exposing (Lesson, LessonCompilationOutcome)
-import Lesson.Index.Core exposing (Index)
+import Lesson.Index.Core exposing (LessonIndex)
 import Lesson.Index.Decoder
 import Lesson.Parser
 import Lesson.Renderer
@@ -37,7 +37,7 @@ type alias WindowSize =
 
 
 type alias Model =
-    { lessonIndex : WebData Index
+    { lessonIndex : WebData LessonIndex
     , openLesson : Timeline (WebData (Maybe Lesson))
     , windowSize : WindowSize
     , theme : Timeline Theme
@@ -55,7 +55,7 @@ type SubscriptionEvent
 
 
 type Event
-    = LessonIndexReceived (WebData Index)
+    = LessonIndexReceived (WebData LessonIndex)
     | LessonReceived (WebData LessonCompilationOutcome)
     | SubscriptionEventReceived SubscriptionEvent
 
@@ -280,7 +280,7 @@ renderLessonContainer theme lessonTimeline =
         ]
 
 
-renderBody : ColorScheme -> WebData Index -> Timeline (WebData (Maybe Lesson)) -> Element msg
+renderBody : ColorScheme -> WebData LessonIndex -> Timeline (WebData (Maybe Lesson)) -> Element msg
 renderBody theme lessonIndex lessonTimeline =
     let
         loader =

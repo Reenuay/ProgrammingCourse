@@ -1,7 +1,7 @@
 module Lesson.Index.Decoder exposing (lessonIndexDecoder)
 
 import Json.Decode as Decode exposing (Decoder)
-import Lesson.Index.Core exposing (Index, LessonEntry)
+import Lesson.Index.Core exposing (LessonEntry, LessonIndex)
 
 
 lessonEntryDecoder : Decoder LessonEntry
@@ -13,8 +13,8 @@ lessonEntryDecoder =
         (Decode.field "path" Decode.string)
 
 
-lessonIndexDecoder : Decoder Index
+lessonIndexDecoder : Decoder LessonIndex
 lessonIndexDecoder =
-    Decode.map2 Index
+    Decode.map2 LessonIndex
         (Decode.field "lessonEntries" (Decode.dict lessonEntryDecoder))
         (Decode.field "lessonOrder" (Decode.list Decode.string))
