@@ -193,13 +193,8 @@ renderHeader colorScheme theme =
         ]
 
 
-renderLesson : Lesson -> Element msg
+renderLesson : ColorScheme -> Timeline (WebData (Maybe Lesson)) -> Element msg
 renderLesson =
-    lazy Lesson.Renderer.render
-
-
-renderLessonLoader : ColorScheme -> Timeline (WebData (Maybe Lesson)) -> Element msg
-renderLessonLoader =
     lazy2
         (\theme lessonTimeline ->
             case Animator.current lessonTimeline of
@@ -242,7 +237,7 @@ renderLessonLoader =
                         (text "Error loading lesson")
 
                 RemoteData.Success (Just lesson) ->
-                    renderLesson lesson
+                    lazy Lesson.Renderer.render lesson
 
                 RemoteData.Success Nothing ->
                     el
@@ -274,7 +269,7 @@ renderLessonContainer theme lessonTimeline =
                 , height fill
                 , spacing 20
                 ]
-                (renderLessonLoader theme lessonTimeline)
+                (renderLesson theme lessonTimeline)
             , el [ width (fillPortion 2) ] none
             ]
         ]
